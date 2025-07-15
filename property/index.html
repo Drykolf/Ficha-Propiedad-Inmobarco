@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UT    <!-- Load external scripts -->
+    <script src="../utils.js"></script>
+    <script src="js/arrendasoft-api.js"></script>
+    
+    <script>
+        // Initialize when DOM is loaded - the API module will handle everything
+        // Additional initialization can be added here if needed
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Configuration - Replace with your actual API configuration
+            const apiConfig = {
+                baseUrl: 'https://inmobarco.arrendasoft.co/service/v2/public',
+                token: 'a8aafd47096445904ad4308cd0bfb9f485709569-70k3n',
+                instance: 'inmobarco'
+            };
+
+            // Create global controller instance
+            window.propertyController = new PropertyDetailController(apiConfig);
+
+            // Initialize the property detail page
+            window.propertyController.init();
+            
+            // Add any additional initialization logic here
+            console.log('🏠 Inmobarco Property Template loaded successfully');
+            
+            // Enable debug mode in development
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                console.log('🔧 Development mode detected');
+                console.log('💡 Use window.debugAPI for debugging helpers');
+            }
+        });
+    </script><!--e="viewport" content="width=device-width, initial-scale=1.0">-->
+    <title>Detalles de Propiedad - Inmobarco</title>
+    <meta name="description" content="Encuentra la propiedad perfecta en Inmobarco. Propiedades en venta y arriendo con la mejor ubicación y precios.">
+    <meta name="keywords" content="inmuebles, propiedades, venta, arriendo, Inmobarco">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="">
+    <meta property="og:title" content="Detalles de Propiedad - Inmobarco">
+    <meta property="og:description" content="Encuentra la propiedad perfecta en Inmobarco">
+    <meta property="og:image" content="">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="">
+    <meta property="twitter:title" content="Detalles de Propiedad - Inmobarco">
+    <meta property="twitter:description" content="Encuentra la propiedad perfecta en Inmobarco">
+    <meta property="twitter:image" content="">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/property-detail-styles.css">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="js/arrendasoft-api.js" as="script">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json" id="property-schema">
+    {
+        "@context": "http://schema.org",
+        "@type": "RealEstate",
+        "name": "Propiedad en Inmobarco",
+        "provider": {
+            "@type": "Organization",
+            "name": "Inmobarco",
+            "url": "https://inmobarco.com"
+        }
+    }
+    </script>
+</head>
+<body>
+    <!-- Header con Logo -->
+    <header class="property-header-with-logo">
+        <div class="header-content">
+            <div class="logo-section">
+                <img src="assets/images/Logo.png" alt="Inmobarco - Inmobiliaria" class="logo-inmobarco">
+                <div class="header-title-section">
+                    <h1 class="header-main-title">Detalles de Propiedad</h1>
+                    <p class="header-subtitle">Encuentra tu hogar ideal</p>
+                </div>
+            </div>
+            <div class="company-info">
+                <p class="company-tagline">Tu hogar ideal te está esperando</p>
+                <p class="company-contact">www.inmobarco.com</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div id="loading" class="loading">
+            Cargando detalles de la propiedad...
+        </div>
+
+        <div id="error" class="error" style="display: none;">
+            Error al cargar la propiedad. Por favor, inténtelo de nuevo más tarde.
+        </div>
+
+        <div id="property-content" style="display: none;">
+            <!-- Property content will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Load external scripts -->
+    <script src="js/secure-config.js"></script>
+    <script src="js/arrendasoft-api.js"></script>
+    
+    <script>
+        // Initialize when DOM is loaded - the API module will handle everything
+        // Additional initialization can be added here if needed
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add any additional initialization logic here
+            console.log('🏠 Inmobarco Property Template loaded successfully');
+            
+            // Enable debug mode in development
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                console.log('🔧 Development mode detected');
+                console.log('💡 Use window.debugAPI for debugging helpers');
+            }
+        });
+    </script>
+</body>
+</html>

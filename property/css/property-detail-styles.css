@@ -1,0 +1,1193 @@
+/* Enhanced Property Detail Page Styles */
+/* Inmobarco - Property Detail Template */
+
+/* CSS Variables for Inmobarco Brand Colors */
+:root {
+    --primary-color: #1B99D3;        /* Azul principal Inmobarco */
+    --secondary-color: #48BFF7;      /* Azul claro Inmobarco */
+    --accent-color: #1B99D3;         /* Azul para acentos */
+    --text-color: #3f3f3f;          /* Negro para texto normal */
+    --text-color2: #8b8b8b;          /* Gris para texto secundario */
+    --text-dark: #141F21;            /* Negro Inmobarco para títulos */
+    
+    /* Backgrounds - 3 profundidades de gris claro */
+    --background-level1: #ffffff;    /* Nivel 1 - Blanco puro (más destacado) */
+    --background-level2: #f8f9fa;    /* Nivel 2 - Gris muy claro (intermedio) */
+    --background-level3: #f1f3f5;    /* Nivel 3 - Gris claro (fondo general) */
+    
+    --white: #ffffff;                /* Blanco puro */
+    --black: #141F21;                /* Negro Inmobarco */
+    --border-color: #e9ecef;         /* Bordes suaves */
+    --shadow: 0 4px 20px rgba(27, 153, 211, 0.1);
+    --shadow-hover: 0 8px 30px rgba(27, 153, 211, 0.15);
+    --border-radius: 12px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--background-level3);
+    line-height: 1.6;
+    padding-top: 0;
+}
+
+/* Container */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    margin-top: 0;
+    background: transparent;
+}
+
+/* Property Header */
+.property-header {
+    background: var(--background-level1);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 30px;
+}
+
+/* Logo Header */
+.property-header-with-logo {
+    background: var(--background-level1);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 30px;
+    padding: 1.5rem 2rem;
+    border-bottom: 3px solid var(--primary-color);
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.logo-inmobarco {
+    height: 70px;
+    width: auto;
+    transition: var(--transition);
+    filter: drop-shadow(0 2px 8px rgba(27, 153, 211, 0.1));
+}
+
+.logo-inmobarco:hover {
+    transform: scale(1.02);
+    filter: drop-shadow(0 4px 12px rgba(27, 153, 211, 0.2));
+}
+
+.header-title-section {
+    flex: 1;
+    text-align: left;
+    margin-left: 0.5rem;
+}
+
+.header-main-title {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.3rem;
+    line-height: 1.2;
+}
+
+.header-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-color2);
+    font-weight: 500;
+}
+
+.company-info {
+    text-align: right;
+    color: var(--text-color);
+}
+
+.company-tagline {
+    font-size: 0.9rem;
+    color: var(--text-color2);
+    font-style: italic;
+    margin-bottom: 0.2rem;
+}
+
+.company-contact {
+    font-size: 0.8rem;
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+/* Modern Image Gallery */
+.property-images {
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.image-gallery-container {
+    display: grid;
+    grid-template-columns: 2.05fr 0.95fr;
+    gap: 1rem;
+    height: auto;
+    border-radius: var(--border-radius);
+    overflow: visible;
+    box-shadow: var(--shadow);
+    background: var(--background-level1);
+}
+
+.main-image-container {
+    position: relative;
+    overflow: hidden;
+    background: var(--background-level2);
+    border-radius: var(--border-radius);
+}
+
+.main-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    transition: var(--transition);
+    cursor: pointer;
+    border-radius: var(--border-radius);
+}
+
+.main-image:hover {
+    transform: scale(1.05);
+    filter: brightness(1.05);
+}
+
+.image-counter {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    background: rgba(20, 31, 33, 0.8);
+    color: var(--white);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.thumbnail-grid {
+    display: grid;
+    grid-template-rows: repeat(2, 1fr);
+    gap: 0.5rem;
+}
+
+.thumbnail-item {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.thumbnail-item:hover {
+    transform: scale(1.02);
+}
+
+.thumbnail-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: var(--transition);
+}
+
+.thumbnail-item:last-child {
+    position: relative;
+}
+
+.thumbnail-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(20, 31, 33, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--white);
+    font-weight: 600;
+    font-size: 1.2rem;
+}
+
+.gallery-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(20, 31, 33, 0.8);
+    color: var(--white);
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: var(--transition);
+    z-index: 10;
+}
+
+.gallery-nav:hover {
+    background: var(--primary-color);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.gallery-nav.prev {
+    left: 1rem;
+}
+
+.gallery-nav.next {
+    right: 1rem;
+}
+
+/* Full Screen Gallery Modal */
+.gallery-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    box-sizing: border-box;
+}
+
+.gallery-modal.active {
+    display: flex;
+}
+
+.modal-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: transparent;
+}
+
+.modal-image {
+    max-width: 100%;
+    max-height: 70vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: var(--border-radius);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.modal-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    color: var(--white);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    transition: var(--transition);
+    z-index: 10;
+}
+
+.modal-nav:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: var(--white);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.modal-nav.prev {
+    left: 2rem;
+}
+
+.modal-nav.next {
+    right: 2rem;
+}
+
+.modal-close {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    color: var(--white);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: var(--transition);
+}
+
+.modal-close:hover {
+    background: rgba(255, 0, 0, 0.3);
+    border-color: rgba(255, 0, 0, 0.5);
+    color: var(--white);
+    transform: scale(1.1);
+}
+
+.modal-counter {
+    color: var(--white);
+    margin-top: 1.5rem;
+    font-size: 1.1rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.3) !important;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    backdrop-filter: blur(5px);
+}
+
+.modal-thumbnail-strip {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    padding: 0 1rem;
+    max-width: 100%;
+    flex-wrap: wrap;
+    background: transparent !important;
+    /* Ocultar barra de scroll */
+    overflow-x: hidden;
+    overflow-y: hidden;
+    /* Scroll suave sin barra visible */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+/* Ocultar scrollbar en WebKit browsers */
+.modal-thumbnail-strip::-webkit-scrollbar {
+    display: none;
+}
+
+.modal-thumbnail {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: var(--transition);
+    flex-shrink: 0;
+    border: 2px solid transparent;
+    margin: 2px; /* Pequeño margen para mejor separación */
+}
+
+.modal-thumbnail.active,
+.modal-thumbnail:hover {
+    opacity: 1;
+    border-color: var(--primary-color);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(27, 153, 211, 0.3);
+}
+
+/* Mejoras adicionales para las miniaturas del modal */
+.modal-thumbnail-container {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Estilo para cuando hay muchas miniaturas */
+.modal-thumbnail-strip.many-thumbnails {
+    max-height: 80px;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    justify-content: flex-start;
+    padding: 0 2rem;
+}
+
+/* Gradiente para indicar que hay más miniaturas */
+.modal-thumbnail-strip.many-thumbnails::before,
+.modal-thumbnail-strip.many-thumbnails::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 30px;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.modal-thumbnail-strip.many-thumbnails::before {
+    left: 0;
+    background: linear-gradient(to right, rgba(0,0,0,0.8), transparent);
+}
+
+.modal-thumbnail-strip.many-thumbnails::after {
+    right: 0;
+    background: linear-gradient(to left, rgba(0,0,0,0.8), transparent);
+}
+
+/* Animación suave para la navegación de miniaturas */
+.modal-thumbnail-strip {
+    scroll-behavior: smooth;
+}
+
+/* Modern Property Layout */
+.property-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: transparent;
+}
+
+.property-header {
+    background: var(--background-level1);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.property-main {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    align-items: start;
+    justify-items: center;
+}
+
+.property-content {
+    background: var(--background-level1);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    padding: 2rem;
+    width: 100%;
+    max-width: 1000px;
+}
+
+/* Property Info Sections */
+.property-info {
+    padding: 2rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--background-level1);
+    color: var(--text-color);
+}
+
+.property-info:last-child {
+    border-bottom: none;
+}
+
+.property-title {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--text-dark);
+    line-height: 1.2;
+}
+
+.property-price {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.price-label {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-color2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.property-location {
+    font-size: 1.1rem;
+    color: var(--text-color2);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.location-icon {
+    color: var(--primary-color);
+    font-size: 1.2rem;
+}
+
+.property-badges {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+
+.property-badge {
+    background: var(--secondary-color);
+    color: var(--white);
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.property-badge.primary {
+    background: var(--primary-color);
+}
+
+.property-badge.type {
+    background: var(--black);
+}
+
+/* Modern Property Features */
+.property-features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.feature-item {
+    background: var(--background-level2);
+    padding: 1.5rem 1rem;
+    border-radius: var(--border-radius);
+    text-align: center;
+    transition: var(--transition);
+    border: 2px solid var(--border-color);
+    position: relative;
+}
+
+.feature-item:hover {
+    transform: translateY(-3px);
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-hover);
+    background: var(--background-level1);
+}
+
+.feature-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-color);
+    color: var(--white);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.8rem;
+    font-size: 1.2rem;
+}
+
+.feature-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 0.3rem;
+    line-height: 1;
+}
+
+.feature-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Property Description */
+.property-description {
+    background: var(--background-level2);
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    margin: 2rem 0;
+}
+
+.property-description h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-dark);
+    position: relative;
+    padding-bottom: 0.5rem;
+}
+
+.property-description h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 3px;
+    background: var(--primary-color);
+    border-radius: 2px;
+}
+
+.property-description p {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: var(--text-color);
+    white-space: pre-line;
+}
+
+/* Property Characteristics */
+.property-characteristics {
+    background: var(--background-level2);
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    margin: 2rem 0;
+}
+
+.characteristics-title {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    color: var(--text-dark);
+    position: relative;
+    padding-bottom: 0.5rem;
+}
+
+.characteristics-title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 3px;
+    background: var(--secondary-color);
+    border-radius: 2px;
+}
+
+.characteristics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.characteristic-item {
+    padding: 1rem;
+    background: var(--background-level1);
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+    border: 1px solid var(--border-color);
+}
+
+.characteristic-label {
+    font-size: 0.9rem;
+    color: var(--text-dark);
+    margin-bottom: 0.3rem;
+    font-weight: 500;
+}
+
+.characteristic-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* Property Characteristic Groups */
+.characteristic-group {
+    margin-bottom: 2rem;
+}
+
+.group-title {
+    font-size: 1.2rem;
+    color: var(--text-dark);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+    font-weight: 600;
+}
+
+/* Contact Section Updates */
+.contact-section {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: var(--white);
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.contact-section h2 {
+    color: var(--white);
+    margin-bottom: 1rem;
+}
+
+.contact-section > p {
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 1.5rem;
+}
+
+/* Agent Info Updates */
+.agent-info {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-align: left;
+}
+
+.agent-photo {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--white);
+}
+
+.agent-details h3 {
+    color: var(--white);
+    margin-bottom: 0.3rem;
+}
+
+.agent-details p {
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0.2rem 0;
+    font-size: 0.9rem;
+}
+
+/* Contact Buttons Updates */
+.contact-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.contact-button {
+    padding: 0.8rem 1.5rem;
+    border: 2px solid var(--white);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 140px;
+    justify-content: center;
+    background: transparent;
+    color: var(--white);
+}
+
+.contact-button:hover {
+    background: var(--white);
+    color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.contact-button.primary {
+    background: #25D366;
+    border-color: #25D366;
+}
+
+.contact-button.primary:hover {
+    background: var(--white);
+    color: #25D366;
+    border-color: #25D366;
+}
+
+/* Loading State */
+.loading {
+    text-align: center;
+    padding: 50px;
+    font-size: 1.2rem;
+    color: var(--text-color2);
+}
+
+.loading::after {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Error State */
+.error {
+    background: var(--accent-color);
+    color: var(--white);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    text-align: center;
+    margin: 20px 0;
+    display: none;
+}
+
+/* Icons */
+.icon-location::before { content: '📍'; }
+.icon-whatsapp::before { content: '📱'; }
+.icon-email::before { content: '✉️'; }
+.icon-phone::before { content: '📞'; }
+
+/* Aplicación consistente de colores y backgrounds */
+.property-info {
+    background: var(--background-level1);
+    color: var(--text-color);
+}
+
+.property-info h1,
+.property-info h2,
+.property-info h3 {
+    color: var(--text-dark);
+}
+
+.modal-content {
+    background: var(--background-level1);
+}
+
+.image-gallery-container {
+    background: var(--background-level1);
+}
+
+/* Asegurar que todos los elementos principales usen los nuevos backgrounds */
+.container {
+    background: transparent;
+}
+
+.property-layout {
+    background: transparent;
+}
+
+/* Texto principal con el nuevo color gris oscuro */
+p, 
+.property-description p,
+body,
+.characteristic-value,
+.feature-label {
+    color:var(--text-color2);
+}
+
+/* Títulos con color negro Inmobarco */
+h1, h2, h3, h4, h5, h6,
+.property-title,
+.characteristics-title,
+.group-title {
+    color: var(--text-dark);
+}
+
+/* Responsive Design - Mobile First */
+@media (max-width: 1200px) {
+    .property-main {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .property-layout {
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .image-gallery-container {
+        grid-template-columns: 1fr;
+        height: auto;
+        gap: 1rem;
+    }
+
+    .main-image-container {
+        height: 300px;
+    }
+
+    .thumbnail-grid {
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: 1fr;
+        gap: 0.5rem;
+    }
+
+    .property-title {
+        font-size: 1.8rem;
+    }
+
+    .property-price {
+        font-size: 2rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.2rem;
+    }
+
+    .property-info,
+    .property-content {
+        padding: 1.5rem;
+    }
+
+    .property-features {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.8rem;
+    }
+
+    .feature-item {
+        padding: 1rem 0.5rem;
+    }
+
+    .feature-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+
+    .feature-value {
+        font-size: 1.4rem;
+    }
+
+    .characteristics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .contact-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .contact-button {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .agent-info {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .modal-nav.prev {
+        left: 1rem;
+    }
+
+    .modal-nav.next {
+        right: 1rem;
+    }
+    
+    .modal-image {
+        max-height: 60vh;
+    }
+    
+    .gallery-modal {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .property-layout {
+        padding: 0.5rem;
+    }
+
+    .property-features {
+        grid-template-columns: 1fr;
+    }
+
+    .property-title {
+        font-size: 1.5rem;
+    }
+
+    .property-price {
+        font-size: 1.8rem;
+    }
+
+    .property-info,
+    .property-content,
+    .property-description,
+    .property-characteristics {
+        padding: 1rem;
+    }
+
+    .contact-section {
+        padding: 1.5rem 1rem;
+    }
+
+    .thumbnail-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .modal-nav {
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+    }
+
+    .modal-content {
+        width: 100%;
+        height: 100%;
+        padding: 0;
+    }
+
+    .modal-close {
+        top: 1rem;
+        right: 1rem;
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+    
+    .modal-thumbnail-strip {
+        flex-wrap: wrap;
+        max-height: none;
+        overflow: hidden;
+        gap: 0.25rem;
+        justify-content: center;
+    }
+    
+    .modal-thumbnail {
+        width: 50px;
+        height: 50px;
+        margin: 1px;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .contact-section {
+        display: none;
+    }
+
+    .property-header {
+        box-shadow: none;
+        border: 1px solid var(--border-color);
+    }
+
+    .property-image {
+        height: 200px;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    :root {
+        --shadow: 0 2px 10px rgba(0,0,0,0.3);
+        --border-color: #000;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* --background-color: #1a1a1a;
+        --white: #2d2d2d;
+        --text-color: #e0e0e0;
+        --text-color2: #b0b0b0;
+        --secondary-color: #ffffff;
+        --border-color: #404040; */
+        --shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+}
+
+/* Additional utility classes */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+.mb-10 { margin-bottom: 10px; }
+.mb-20 { margin-bottom: 20px; }
+.mb-30 { margin-bottom: 30px; }
+.mt-10 { margin-top: 10px; }
+.mt-20 { margin-top: 20px; }
+.mt-30 { margin-top: 30px; }
+.hidden { display: none; }
+.visible { display: block; }
+
+/* Prevenir scroll cuando el modal está abierto */
+body.modal-open {
+    overflow: hidden;
+    height: 100vh;
+}
+
+/* Mejoras adicionales para el modal */
+.gallery-modal {
+    overflow: hidden;
+}
+
+.modal-content {
+    overflow: hidden;
+}
+
+/* Mejorar la transición del hover de la imagen principal */
+.main-image-container:hover .main-image {
+    transform: scale(1.05);
+    filter: brightness(1.05);
+}
+
+.main-image-container .main-image {
+    transition: all 0.3s ease;
+}
+
+/* Asegurar que no haya fondos blancos en el modal */
+.gallery-modal * {
+    background-color: transparent !important;
+}
+
+.gallery-modal .modal-content {
+    background: transparent !important;
+}
+
+.gallery-modal .modal-image {
+    background: transparent !important;
+}
+
+.gallery-modal .modal-counter {
+    background: transparent !important;
+}
+
+.gallery-modal .modal-thumbnail-strip {
+    background: transparent !important;
+}
+
+/* Efecto glass para los controles del modal */
+.modal-nav,
+.modal-close {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
