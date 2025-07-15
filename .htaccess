@@ -5,11 +5,11 @@ RewriteEngine On
 
 # Pretty URLs for properties
 # /property/123 -> /index.html?id=123
-RewriteRule ^property/([0-9]+)/?$ index.html?id=$1 [L,QSA]
-
+RewriteRule ^property/([0-9]+)/?$ /property/index.html?id=$1 [L,QSA]
+RewriteRule ^property/?$ /property/index.html [L]
 # Alternative URL patterns
 # /propiedad/123 -> /index.html?id=123 (Spanish version)
-RewriteRule ^propiedad/([0-9]+)/?$ index.html?id=$1 [L,QSA]
+RewriteRule ^propiedad/([0-9]+)/?$ /property/index.html?id=$1 [L,QSA]
 
 # Handle missing trailing slashes
 RewriteCond %{REQUEST_FILENAME} !-f

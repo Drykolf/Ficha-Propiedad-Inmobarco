@@ -1,3 +1,19 @@
+// Configuration loader
+class ConfigLoader {
+    static async loadConfig() {
+        try {
+            const response = await fetch('./config.json');
+            if (!response.ok) {
+                throw new Error('Config file not found');
+            }
+            return await response.json();
+        } catch (error) {
+            console.warn('⚠️ Could not load config.json, using fallback configuration');
+            // Fallback configuration
+        }
+    }
+}
+
 // Arrendasoft API Integration Module
 // This module provides a clean interface to interact with Arrendasoft V2 API
 
@@ -610,7 +626,8 @@ class PropertyDetailController {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
-    // Initialize secure configuration
+    // Load configuration from config.json
+    const config = await ConfigLoader.loadConfig();
     let apiConfig;
     
     if (typeof SecureAPIConfig !== 'undefined') {
@@ -622,19 +639,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
         console.log('✅ Using secure API configuration');
     } else {
-        // Fallback configuration (only for development)
-        console.warn('⚠️ SecureAPIConfig not found. Using fallback configuration.');
-        console.warn('🔒 For production, please implement secure-config.js');
-        
-        apiConfig = {
-            baseUrl: 'https://inmobarco.arrendasoft.co/service/v2/public',
-            token: 'a8aafd47096445904ad4308cd0bfb9f485709569-70k3n',
-            instance: 'inmobarco'
-        };
+        // Use configuration from config.json
+        apiConfig = config.api;
+        console.log('✅ Using configuration from config.json');
     }
 
-    // Create global controller instance
+    // Create global controller instance with loaded configuration
     window.propertyController = new PropertyDetailController(apiConfig);
+    
+    // Store company configuration globally for contact methods
+    window.companyConfig = config.company;
 
     // Initialize the property detail page
     window.propertyController.init();

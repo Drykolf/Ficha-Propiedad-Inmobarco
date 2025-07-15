@@ -33,6 +33,7 @@ Esta plantilla crea una página minimalista para mostrar detalles de propiedades
 ### Opción 1: Como Página Independiente
 
 1. **Sube los archivos a tu servidor:**
+
    ```
    /public_html/
    ├── property/
@@ -41,13 +42,41 @@ Esta plantilla crea una página minimalista para mostrar detalles de propiedades
    │   └── property-detail-styles.css
    ```
 
-2. **Configura la API:**
-   ```javascript
-   const apiConfig = {
-       baseUrl: 'https://tu-instancia.arrendasoft.co/service/v2/public',
-       token: 'TU_TOKEN_DE_API_AQUI',
-       instance: 'tu-instancia'
-   };
+2. **Configura las credenciales de la API:**
+
+   **Opción A: Archivo config.json (Recomendado)**
+
+   ```json
+   {
+     "api": {
+       "baseUrl": "https://tu-instancia.arrendasoft.co/service/v2/public",
+       "token": "TU_TOKEN_DE_API_AQUI",
+       "instance": "tu-instancia"
+     },
+     "company": {
+       "name": "Tu Empresa",
+       "phone": "573001234567",
+       "email": "contacto@tuempresa.com"
+     }
+   }
+   ```
+
+   **Opción B: Archivo api.config**
+
+   ```
+   API_BASE_URL=https://tu-instancia.arrendasoft.co/service/v2/public
+   API_TOKEN=TU_TOKEN_DE_API_AQUI
+   API_INSTANCE=tu-instancia
+   COMPANY_NAME=Tu Empresa
+   COMPANY_PHONE=573001234567
+   COMPANY_EMAIL=contacto@tuempresa.com
+   ```
+
+   **Opción C: Variables de entorno (Para desarrollo)**
+   Copia `.env.example` a `.env` y actualiza los valores
+
+   ```
+
    ```
 
 3. **Accede a las propiedades:**
@@ -59,6 +88,7 @@ Esta plantilla crea una página minimalista para mostrar detalles de propiedades
 ### Opción 2: Como Plantilla en WordPress
 
 1. **Crea un directorio en tu tema:**
+
    ```
    /wp-content/themes/tu-tema/
    ├── page-property-detail.php
@@ -69,12 +99,13 @@ Esta plantilla crea una página minimalista para mostrar detalles de propiedades
    ```
 
 2. **Crea page-property-detail.php:**
+
    ```php
    <?php
    /*
    Template Name: Property Detail
    */
-   
+
    // Contenido del archivo property-detail-template.html
    ?>
    ```
@@ -88,6 +119,7 @@ Esta plantilla crea una página minimalista para mostrar detalles de propiedades
 ### Opción 3: Como Subdirectorio
 
 1. **Estructura recomendada:**
+
    ```
    /public_html/
    ├── property/
@@ -113,30 +145,34 @@ Esta plantilla crea una página minimalista para mostrar detalles de propiedades
 ```javascript
 // Ejemplo de login para obtener token
 const login = async () => {
-    const response = await fetch('https://tu-instancia.arrendasoft.co/service/v2/public/login', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            username: 'tu_usuario',
-            password: 'tu_contraseña'
-        })
-    });
-    
-    const data = await response.json();
-    return data.token;
+  const response = await fetch(
+    "https://tu-instancia.arrendasoft.co/service/v2/public/login",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: "tu_usuario",
+        password: "tu_contraseña",
+      }),
+    }
+  );
+
+  const data = await response.json();
+  return data.token;
 };
 ```
 
 ### 2. Configurar Instancia
 
 Reemplaza `tu-instancia` con el nombre de tu instancia en Arrendasoft:
+
 ```javascript
 const apiConfig = {
-    baseUrl: 'https://inmobarco.arrendasoft.co/service/v2/public',
-    token: 'tu_token_aqui',
-    instance: 'inmobarco'
+  baseUrl: "https://inmobarco.arrendasoft.co/service/v2/public",
+  token: "tu_token_aqui",
+  instance: "inmobarco",
 };
 ```
 
@@ -145,11 +181,13 @@ const apiConfig = {
 La página soporta diferentes formatos de URL:
 
 1. **Query Parameter:**
+
    ```
    https://inmobarco.com/property/?id=123
    ```
 
 2. **Path Parameter:**
+
    ```
    https://inmobarco.com/property/123
    ```
@@ -167,11 +205,11 @@ Edita las variables CSS en `property-detail-styles.css`:
 
 ```css
 :root {
-    --primary-color: #3498db;      /* Color principal */
-    --secondary-color: #2c3e50;    /* Color secundario */
-    --accent-color: #e74c3c;       /* Color de acento */
-    --text-color: #333;            /* Color del texto */
-    --background-color: #f8f9fa;   /* Color de fondo */
+  --primary-color: #3498db; /* Color principal */
+  --secondary-color: #2c3e50; /* Color secundario */
+  --accent-color: #e74c3c; /* Color de acento */
+  --text-color: #333; /* Color del texto */
+  --background-color: #f8f9fa; /* Color de fondo */
 }
 ```
 
@@ -193,11 +231,11 @@ Personaliza los campos mostrados en `renderPropertyFeatures()`:
 
 ```javascript
 const features = [
-    { label: 'Habitaciones', value: property.bedrooms },
-    { label: 'Baños', value: property.bathrooms },
-    { label: 'Área', value: this.formatArea(property.area) },
-    { label: 'Parqueaderos', value: property.parking },
-    // Agrega más campos según tus necesidades
+  { label: "Habitaciones", value: property.bedrooms },
+  { label: "Baños", value: property.bathrooms },
+  { label: "Área", value: this.formatArea(property.area) },
+  { label: "Parqueaderos", value: property.parking },
+  // Agrega más campos según tus necesidades
 ];
 ```
 
@@ -206,12 +244,14 @@ const features = [
 ### Usando Live Server en VSCode
 
 1. **Instala Live Server:**
+
    - Abre VSCode
    - Ir a Extensions (Ctrl+Shift+X)
    - Buscar "Live Server"
    - Instalar la extensión de Ritwick Dey
 
 2. **Ejecutar el servidor:**
+
    - Abrir `property-detail-template.html`
    - Clic derecho > "Open with Live Server"
    - O usar el botón "Go Live" en la barra de estado
@@ -239,6 +279,7 @@ http://localhost:3000/property-detail-template.html?id=123
 ### Meta Tags Dinámicos
 
 La página actualiza automáticamente:
+
 - `<title>`: Título de la propiedad
 - `<meta name="description">`: Descripción generada
 - Open Graph tags para redes sociales
@@ -248,7 +289,7 @@ La página actualiza automáticamente:
 ```javascript
 // Ejemplo de optimización de imágenes
 const optimizeImage = (src, width = 800) => {
-    return `${src}?w=${width}&q=80&fm=webp`;
+  return `${src}?w=${width}&q=80&fm=webp`;
 };
 ```
 
@@ -258,19 +299,19 @@ Para optimizar la carga:
 
 ```javascript
 // Implementar lazy loading para imágenes
-const lazyImages = document.querySelectorAll('img[data-src]');
+const lazyImages = document.querySelectorAll("img[data-src]");
 const imageObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            const img = entry.target;
-            img.src = img.dataset.src;
-            img.classList.remove('lazy');
-            imageObserver.unobserve(img);
-        }
-    });
+  entries.forEach((entry) => {
+    if (entry.isIntersecting) {
+      const img = entry.target;
+      img.src = img.dataset.src;
+      img.classList.remove("lazy");
+      imageObserver.unobserve(img);
+    }
+  });
 });
 
-lazyImages.forEach(img => imageObserver.observe(img));
+lazyImages.forEach((img) => imageObserver.observe(img));
 ```
 
 ## Seguridad
@@ -280,14 +321,14 @@ lazyImages.forEach(img => imageObserver.observe(img));
 ```javascript
 // Validar ID de propiedad
 const validatePropertyId = (id) => {
-    return /^[0-9]+$/.test(id) && parseInt(id) > 0;
+  return /^[0-9]+$/.test(id) && parseInt(id) > 0;
 };
 
 // Sanitizar contenido
 const sanitizeContent = (content) => {
-    const div = document.createElement('div');
-    div.textContent = content;
-    return div.innerHTML;
+  const div = document.createElement("div");
+  div.textContent = content;
+  return div.innerHTML;
 };
 ```
 
@@ -297,9 +338,9 @@ Para producción, usa variables de entorno:
 
 ```javascript
 const apiConfig = {
-    baseUrl: process.env.ARRENDASOFT_API_URL || 'https://default-url.com',
-    token: process.env.ARRENDASOFT_TOKEN || 'default-token',
-    instance: process.env.ARRENDASOFT_INSTANCE || 'default-instance'
+  baseUrl: process.env.ARRENDASOFT_API_URL || "https://default-url.com",
+  token: process.env.ARRENDASOFT_TOKEN || "default-token",
+  instance: process.env.ARRENDASOFT_INSTANCE || "default-instance",
 };
 ```
 
@@ -308,17 +349,19 @@ const apiConfig = {
 ### Problemas Comunes
 
 1. **Error de CORS:**
+
    ```
    Solución: Configurar headers CORS en el servidor de Arrendasoft
    O usar un proxy server
    ```
 
 2. **Token expirado:**
+
    ```javascript
    // Implementar renovación automática de token
    if (response.status === 401) {
-       await this.refreshToken();
-       return this.request(endpoint, options);
+     await this.refreshToken();
+     return this.request(endpoint, options);
    }
    ```
 
@@ -326,8 +369,8 @@ const apiConfig = {
    ```javascript
    // Manejar errores 404
    if (response.status === 404) {
-       this.showError('Propiedad no encontrada');
-       return;
+     this.showError("Propiedad no encontrada");
+     return;
    }
    ```
 
@@ -338,9 +381,9 @@ const apiConfig = {
 const DEBUG = true;
 
 const debugLog = (message, data) => {
-    if (DEBUG) {
-        console.log(`[DEBUG] ${message}`, data);
-    }
+  if (DEBUG) {
+    console.log(`[DEBUG] ${message}`, data);
+  }
 };
 ```
 
@@ -356,7 +399,11 @@ const debugLog = (message, data) => {
 
 ```html
 <!-- Cargar desde CDN para mejor rendimiento -->
-<link rel="preload" href="https://cdn.inmobarco.com/css/property-detail-styles.css" as="style">
+<link
+  rel="preload"
+  href="https://cdn.inmobarco.com/css/property-detail-styles.css"
+  as="style"
+/>
 <script defer src="https://cdn.inmobarco.com/js/arrendasoft-api.js"></script>
 ```
 
@@ -366,9 +413,9 @@ const debugLog = (message, data) => {
 
 ```javascript
 // Integrar Google Analytics
-gtag('event', 'property_view', {
-    'property_id': this.propertyId,
-    'property_title': this.property.title
+gtag("event", "property_view", {
+  property_id: this.propertyId,
+  property_title: this.property.title,
 });
 ```
 
@@ -379,9 +426,69 @@ gtag('event', 'property_view', {
 Sentry.captureException(error);
 ```
 
+## Seguridad de Credenciales
+
+### ⚠️ Importante: Protección de API Keys
+
+Las credenciales de la API son sensibles y deben protegerse adecuadamente:
+
+1. **Para Desarrollo:**
+
+   - Usa archivos `.env` (nunca commitees este archivo)
+   - Agrega `.env` y `config.json` a tu `.gitignore`
+
+2. **Para Producción:**
+
+   - Usa variables de entorno del servidor
+   - Considera implementar un proxy/middleware para ocultar las credenciales
+   - Rotación periódica de tokens
+
+3. **Archivos de Configuración:**
+
+   ```
+   # Estructura recomendada
+   /property/
+   ├── config.json          # No commitear (contiene credenciales reales)
+   ├── config.example.json  # Template sin credenciales
+   ├── api.config          # Archivo de configuración alternativo
+   └── .env.example        # Template para variables de entorno
+   ```
+
+4. **Validación de Origen:**
+   - Configura CORS en tu API
+   - Restringe el acceso por dominio
+   - Monitorea el uso de la API
+
+### 🔒 Implementación Segura Recomendada
+
+Para máxima seguridad, implementa un endpoint proxy en tu servidor:
+
+```php
+<?php
+// api-proxy.php
+$config = json_decode(file_get_contents('config.json'), true);
+$endpoint = $_GET['endpoint'] ?? '';
+$url = $config['api']['baseUrl'] . '/' . $endpoint;
+
+$headers = [
+    'Authorization: Bearer ' . $config['api']['token'],
+    'Content-Type: application/json'
+];
+
+// Proxy la solicitud
+$response = file_get_contents($url, false, stream_context_create([
+    'http' => ['header' => implode("\r\n", $headers)]
+]));
+
+header('Content-Type: application/json');
+echo $response;
+?>
+```
+
 ## Soporte
 
 Para soporte técnico:
+
 - Email: soporte@inmobarco.com
 - Documentación API: https://docs.arrendasoft.co
 - GitHub Issues: [Crear issue]
@@ -401,12 +508,14 @@ Este proyecto está bajo la licencia MIT. Ver archivo LICENSE para más detalles
 ## Changelog
 
 ### v1.0.0
+
 - ✅ Implementación inicial
 - ✅ Integración con API Arrendasoft V2
 - ✅ Diseño responsive
 - ✅ Contacto por WhatsApp, email y teléfono
 
 ### Próximas Versiones
+
 - 🔄 Galería de imágenes avanzada
 - 🔄 Mapa interactivo
 - 🔄 Compartir en redes sociales

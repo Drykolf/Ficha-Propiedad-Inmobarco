@@ -51,3 +51,5 @@ api-keys.txt
 # Cache files
 .cache/
 *.cache
+
+/property/config.json
