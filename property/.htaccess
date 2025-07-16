@@ -1,5 +1,0 @@
-# Denegar acceso a archivos sensibles
-<Files "*.json">
-    Order allow,deny
-    Deny from all
-</Files>

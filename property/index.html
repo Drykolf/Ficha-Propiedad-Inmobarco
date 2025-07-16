@@ -9,19 +9,18 @@
         // Initialize when DOM is loaded - the API module will handle everything
         // Additional initialization can be added here if needed
         
-        document.addEventListener('DOMContentLoaded', () => {
-            // Configuration - Replace with your actual API configuration
-            const apiConfig = {
-                baseUrl: 'https://inmobarco.arrendasoft.co/service/v2/public',
-                token: 'a8aafd47096445904ad4308cd0bfb9f485709569-70k3n',
-                instance: 'inmobarco'
-            };
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Load configuration from config.json
+                const configResponse = await fetch('config.json');
+                const config = await configResponse.json();
+                const apiConfig = config.api;
 
-            // Create global controller instance
-            window.propertyController = new PropertyDetailController(apiConfig);
+                // Create global controller instance
+                window.propertyController = new PropertyDetailController(apiConfig);
 
-            // Initialize the property detail page
-            window.propertyController.init();
+                // Initialize the property detail page
+                window.propertyController.init();
             
             // Add any additional initialization logic here
             console.log('🏠 Inmobarco Property Template loaded successfully');
@@ -30,6 +29,17 @@
             if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 console.log('🔧 Development mode detected');
                 console.log('💡 Use window.debugAPI for debugging helpers');
+            }
+            } catch (error) {
+                console.error('Error loading configuration:', error);
+                // Show error message to user
+                const errorElement = document.getElementById('error');
+                const loadingElement = document.getElementById('loading');
+                if (errorElement && loadingElement) {
+                    loadingElement.style.display = 'none';
+                    errorElement.style.display = 'block';
+                    errorElement.textContent = 'Error al cargar la configuración. Por favor, inténtelo de nuevo más tarde.';
+                }
             }
         });
     </script><!--e="viewport" content="width=device-width, initial-scale=1.0">-->
