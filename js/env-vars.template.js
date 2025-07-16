@@ -1,5 +1,6 @@
-// This script will be replaced by Netlify build process with actual environment variables
-// For now, it provides a placeholder structure
+// Template for environment variables - DO NOT EDIT
+// This file will be replaced by build-env.js during Netlify build
+// For local development, use .env file
 
 (function() {
     // This will be replaced during build with actual values from Netlify environment variables
@@ -14,5 +15,5 @@
         VITE_ENCRYPTION_SALT: '{{VITE_ENCRYPTION_SALT}}'
     };
 
-    console.log('Environment variables script loaded');
+    console.log('Environment variables template loaded - will be replaced during build');
 })();

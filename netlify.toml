@@ -1,6 +1,6 @@
 [build]
   publish = "."
-  command = "echo 'Static site - no build required'"
+  command = "node build-env.js && echo 'Static site ready with environment variables'"
 
 [build.environment]
   NODE_VERSION = "18"

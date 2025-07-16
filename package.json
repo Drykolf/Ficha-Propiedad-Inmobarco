@@ -4,6 +4,7 @@
   "description": "Plantilla optimizada para mostrar detalles de propiedades inmobiliarias con integración a Arrendasoft V2 API y encriptación de URLs",
   "main": "index.html",
   "scripts": {
+    "build": "node build-env.js",
     "start": "python -m http.server 3000",
     "dev": "python -m http.server 3000",
     "serve": "python -m http.server 8000",

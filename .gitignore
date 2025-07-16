@@ -52,6 +52,9 @@ api-keys.txt
 .cache/
 *.cache
 
+# Generated files during build (keep template, ignore generated)
+js/env-vars.js
+
 /property/config.json
 /config.json
 /generate-property-url.js
