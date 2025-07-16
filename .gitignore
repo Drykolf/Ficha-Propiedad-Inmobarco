@@ -55,7 +55,7 @@ api-keys.txt
 # Generated files during build (keep template, ignore generated)
 js/env-vars.js
 
-/property/config.json
-/config.json
-/generate-property-url.js
 /debug-env.js
+/js/env-vars.js
+/generador-url.html
+/js/env-vars.local.js
