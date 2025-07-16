@@ -1,21 +1,5 @@
-// Configuration loader
-class ConfigLoader {
-    static async loadConfig() {
-        try {
-            const response = await fetch('./config.json');
-            if (!response.ok) {
-                throw new Error('Config file not found');
-            }
-            return await response.json();
-        } catch (error) {
-            console.warn('⚠️ Could not load config.json, using fallback configuration');
-            // Fallback configuration
-        }
-    }
-}
-
 // Arrendasoft API Integration Module
-// This module provides a clean interface to interact with Arrendasoft V2 API
+// Clean interface to interact with Arrendasoft V2 API
 
 class ArrendasoftAPI {
     constructor(config) {

@@ -8,24 +8,27 @@ class PropertyEncryption {
         this.initialized = false;
     }
 
-    // Initialize with environment variables
-    init() {
+    // Initialize with configuration from env-config
+    init(encryptionConfig = null) {
         try {
-            // Get encryption key and salt from environment
-            const envKey = window.ENV?.VITE_ENCRYPTION_KEY || 'InmobarcoDefault';
-            const envSalt = window.ENV?.VITE_ENCRYPTION_SALT || 'DefaultSalt';
+            // Use provided config or get from environment/fallback
+            if (encryptionConfig) {
+                this.key = encryptionConfig.key;
+                this.salt = encryptionConfig.salt;
+            } else {
+                // Fallback to environment variables or defaults
+                this.key = window.ENV?.VITE_ENCRYPTION_KEY || 'InmobarcoSecretKey2025';
+                this.salt = window.ENV?.VITE_ENCRYPTION_SALT || 'PropertySalt';
+            }
             
-            this.key = envKey;
-            this.salt = envSalt;
             this.initialized = true;
-            
             console.log('🔐 Property ID encryption initialized');
             return true;
         } catch (error) {
             console.error('❌ Failed to initialize encryption:', error);
-            // Fallback to default values for development
-            this.key = 'InmobarcoDefault';
-            this.salt = 'DefaultSalt';
+            // Fallback to default values
+            this.key = 'InmobarcoSecretKey2025';
+            this.salt = 'PropertySalt';
             this.initialized = true;
             return false;
         }

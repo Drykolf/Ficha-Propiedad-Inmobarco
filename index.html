@@ -79,7 +79,6 @@
     <!-- Load external scripts -->
     <script src="js/env-vars.js"></script>
     <script src="js/env-config.js"></script>
-    <script src="js/secure-config.js"></script>
     <script src="js/property-encryption.js"></script>
     <script src="js/arrendasoft-api.js"></script>
     
@@ -93,19 +92,21 @@
             try {
                 console.log('🚀 Initializing application...');
                 
-                // Initialize encryption module first
-                if (window.propertyEncryption) {
-                    window.propertyEncryption.init();
-                }
-                
-                // Load configuration using environment-aware config loader
+                // Load configuration first
                 await window.envConfig.loadConfig();
                 const apiConfig = window.envConfig.getApiConfig();
+                const encryptionConfig = window.envConfig.getEncryptionConfig();
+                
+                // Initialize encryption with config
+                if (window.propertyEncryption) {
+                    window.propertyEncryption.init(encryptionConfig);
+                }
                 
                 console.log('📋 Configuration loaded:', {
                     hasBaseUrl: !!apiConfig?.baseUrl,
                     hasToken: !!apiConfig?.token,
-                    instance: apiConfig?.instance
+                    instance: apiConfig?.instance,
+                    hasEncryption: !!encryptionConfig?.key
                 });
                 
                 if (!apiConfig) {

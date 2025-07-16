@@ -4,6 +4,8 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  # Note: Encryption variables are configured in Netlify's environment variables
+  # VITE_ENCRYPTION_KEY and VITE_ENCRYPTION_SALT must be set in Netlify dashboard
 
 [[headers]]
   for = "/*"

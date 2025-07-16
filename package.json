@@ -1,0 +1,34 @@
+{
+  "name": "inmobarco-property-template",
+  "version": "2.0.0",
+  "description": "Plantilla optimizada para mostrar detalles de propiedades inmobiliarias con integración a Arrendasoft V2 API y encriptación de URLs",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 3000",
+    "dev": "python -m http.server 3000",
+    "serve": "python -m http.server 8000",
+    "generate-url": "node generate-property-url.js"
+  },
+  "keywords": [
+    "inmobiliaria",
+    "propiedades",
+    "arrendasoft",
+    "api",
+    "real-estate",
+    "property-details",
+    "encryption",
+    "url-security"
+  ],
+  "author": "Inmobarco",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Drykolf/inmobarco-property-template"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
