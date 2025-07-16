@@ -11,10 +11,13 @@
         
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                // Load configuration from config.json
-                const configResponse = await fetch('config.json');
-                const config = await configResponse.json();
-                const apiConfig = config.api;
+                // Load configuration using environment-aware config loader
+                await window.envConfig.loadConfig();
+                const apiConfig = window.envConfig.getApiConfig();
+                
+                if (!apiConfig || !apiConfig.token) {
+                    throw new Error('API configuration is missing or invalid');
+                }
 
                 // Create global controller instance
                 window.propertyController = new PropertyDetailController(apiConfig);
@@ -117,6 +120,8 @@
     </div>
 
     <!-- Load external scripts -->
+    <script src="js/env-vars.js"></script>
+    <script src="js/env-config.js"></script>
     <script src="js/secure-config.js"></script>
     <script src="js/arrendasoft-api.js"></script>
     
