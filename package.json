@@ -5,6 +5,7 @@
   "main": "index.html",
   "scripts": {
     "build": "node build-env.js",
+    "debug-env": "node debug-env.js",
     "start": "python -m http.server 3000",
     "dev": "python -m http.server 3000",
     "serve": "python -m http.server 8000",

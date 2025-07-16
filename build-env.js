@@ -7,6 +7,11 @@ const fs = require('fs');
 const path = require('path');
 
 console.log('🔧 Generating env-vars.js with Netlify environment variables...');
+console.log('🌍 Current environment:', process.env.NODE_ENV || 'development');
+console.log('🔍 Available environment variables:');
+console.log('   - NETLIFY:', !!process.env.NETLIFY);
+console.log('   - BUILD_ID:', process.env.BUILD_ID || 'not set');
+console.log('   - CONTEXT:', process.env.CONTEXT || 'not set');
 
 // Obtener variables de entorno
 const envVars = {
@@ -19,6 +24,14 @@ const envVars = {
     VITE_ENCRYPTION_KEY: process.env.VITE_ENCRYPTION_KEY || 'InmobarcoDefault',
     VITE_ENCRYPTION_SALT: process.env.VITE_ENCRYPTION_SALT || 'DefaultSalt'
 };
+
+console.log('🔍 Checking individual environment variables:');
+Object.keys(envVars).forEach(key => {
+    const value = process.env[key];
+    const isSensitive = key.includes('TOKEN') || key.includes('KEY') || key.includes('SALT');
+    const displayValue = isSensitive ? (value ? '***PROVIDED***' : 'NOT PROVIDED') : (value || 'NOT PROVIDED');
+    console.log(`   - ${key}: ${displayValue}`);
+});
 
 // Verificar variables críticas
 const criticalVars = ['VITE_API_TOKEN', 'VITE_ENCRYPTION_KEY', 'VITE_ENCRYPTION_SALT'];
