@@ -8,5 +8,9 @@
     "name": "Inmobarco",
     "phone": "573045258750",
     "email": "comercial@inmobarco.com"
+  },
+  "encryption": {
+    "key": "InmobarcoSecretKey2025",
+    "salt": "PropertySalt"
   }
 }

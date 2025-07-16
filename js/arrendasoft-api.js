@@ -120,6 +120,15 @@ class PropertyDetailController {
 
     // Extract property ID from URL
     getPropertyIdFromUrl() {
+        // Use the encryption module to get and decrypt the property ID
+        if (window.propertyEncryption) {
+            const propertyId = window.propertyEncryption.getPropertyIdFromUrl();
+            if (propertyId) return propertyId;
+        }
+
+        // Fallback to legacy method if encryption module is not available
+        console.warn('⚠️ Property encryption module not available, using fallback method');
+        
         // Option 1: From query parameter ?id=123
         const urlParams = new URLSearchParams(window.location.search);
         const idParam = urlParams.get('id');

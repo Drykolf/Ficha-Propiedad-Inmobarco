@@ -30,6 +30,10 @@ class EnvConfig {
                             name: window.ENV.VITE_COMPANY_NAME || 'Inmobarco',
                             phone: window.ENV.VITE_COMPANY_PHONE || '573045258750',
                             email: window.ENV.VITE_COMPANY_EMAIL || 'comercial@inmobarco.com'
+                        },
+                        encryption: {
+                            key: window.ENV.VITE_ENCRYPTION_KEY || 'InmobarcoDefault',
+                            salt: window.ENV.VITE_ENCRYPTION_SALT || 'DefaultSalt'
                         }
                     };
                 } else {

@@ -1,87 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UT    <!-- Load external scripts -->
-    <script src="../utils.js"></script>
-    <script src="js/arrendasoft-api.js"></script>
-    
-    <script>
-        // Initialize when DOM is loaded - the API module will handle everything
-        // Additional initialization can be added here if needed
-        
-        document.addEventListener('DOMContentLoaded', async () => {
-            const loadingElement = document.getElementById('loading');
-            const errorElement = document.getElementById('error');
-            const contentElement = document.getElementById('property-content');
-            
-            try {
-                console.log('🚀 Initializing application...');
-                
-                // Load configuration using environment-aware config loader
-                await window.envConfig.loadConfig();
-                const apiConfig = window.envConfig.getApiConfig();
-                
-                console.log('📋 Configuration loaded:', {
-                    hasBaseUrl: !!apiConfig?.baseUrl,
-                    hasToken: !!apiConfig?.token,
-                    instance: apiConfig?.instance
-                });
-                
-                if (!apiConfig) {
-                    throw new Error('No se pudo cargar la configuración de la API');
-                }
-                
-                if (!apiConfig.token) {
-                    throw new Error('Token de API no encontrado en la configuración');
-                }
-
-                // Create global controller instance
-                window.propertyController = new PropertyDetailController(apiConfig);
-
-                // Initialize the property detail page
-                window.propertyController.init();
-            
-            // Add any additional initialization logic here
-            console.log('🏠 Inmobarco Property Template loaded successfully');
-            
-            // Enable debug mode in development
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                console.log('🔧 Development mode detected');
-                console.log('💡 Use window.debugAPI for debugging helpers');
-            }
-            } catch (error) {
-                console.error('❌ Error during initialization:', error);
-                
-                // Hide loading, show error
-                if (loadingElement) loadingElement.style.display = 'none';
-                if (errorElement) {
-                    errorElement.style.display = 'block';
-                    errorElement.innerHTML = `
-                        <h3>Error al cargar la aplicación</h3>
-                        <p><strong>Detalle:</strong> ${error.message}</p>
-                        <p><strong>Posibles causas:</strong></p>
-                        <ul>
-                            <li>Variables de entorno no configuradas correctamente en Netlify</li>
-                            <li>Token de API inválido o expirado</li>
-                            <li>Problema de conectividad</li>
-                        </ul>
-                        <p>Por favor, verifica la configuración e inténtalo de nuevo.</p>
-                        <button onclick="window.location.reload()" style="margin-top: 10px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                            Reintentar
-                        </button>
-                    `;
-                }
-                
-                // Log environment info for debugging
-                console.log('🔍 Debug info:', {
-                    hostname: window.location.hostname,
-                    isProduction: window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1',
-                    hasENV: !!window.ENV,
-                    envKeys: window.ENV ? Object.keys(window.ENV) : 'No ENV object'
-                });
-            }
-        });
-    </script><!--e="viewport" content="width=device-width, initial-scale=1.0">-->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detalles de Propiedad - Inmobarco</title>
     <meta name="description" content="Encuentra la propiedad perfecta en Inmobarco. Propiedades en venta y arriendo con la mejor ubicación y precios.">
     <meta name="keywords" content="inmuebles, propiedades, venta, arriendo, Inmobarco">
@@ -159,20 +80,90 @@
     <script src="js/env-vars.js"></script>
     <script src="js/env-config.js"></script>
     <script src="js/secure-config.js"></script>
+    <script src="js/property-encryption.js"></script>
     <script src="js/arrendasoft-api.js"></script>
     
     <script>
-        // Initialize when DOM is loaded - the API module will handle everything
-        // Additional initialization can be added here if needed
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            // Add any additional initialization logic here
-            console.log('🏠 Inmobarco Property Template loaded successfully');
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', async () => {
+            const loadingElement = document.getElementById('loading');
+            const errorElement = document.getElementById('error');
+            const contentElement = document.getElementById('property-content');
             
-            // Enable debug mode in development
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                console.log('🔧 Development mode detected');
-                console.log('💡 Use window.debugAPI for debugging helpers');
+            try {
+                console.log('🚀 Initializing application...');
+                
+                // Initialize encryption module first
+                if (window.propertyEncryption) {
+                    window.propertyEncryption.init();
+                }
+                
+                // Load configuration using environment-aware config loader
+                await window.envConfig.loadConfig();
+                const apiConfig = window.envConfig.getApiConfig();
+                
+                console.log('📋 Configuration loaded:', {
+                    hasBaseUrl: !!apiConfig?.baseUrl,
+                    hasToken: !!apiConfig?.token,
+                    instance: apiConfig?.instance
+                });
+                
+                if (!apiConfig) {
+                    throw new Error('No se pudo cargar la configuración de la API');
+                }
+                
+                if (!apiConfig.token) {
+                    throw new Error('Token de API no encontrado en la configuración');
+                }
+
+                // Create global controller instance
+                window.propertyController = new PropertyDetailController(apiConfig);
+
+                // Initialize the property detail page
+                await window.propertyController.init();
+                
+                console.log('🏠 Inmobarco Property Template loaded successfully');
+                
+                // Enable debug mode in development
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    console.log('🔧 Development mode detected');
+                    console.log('💡 Use window.debugAPI for debugging helpers');
+                    console.log('🔐 Use window.debugEncryption for encryption helpers');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error during initialization:', error);
+                
+                // Hide loading, show error
+                if (loadingElement) loadingElement.style.display = 'none';
+                if (errorElement) {
+                    errorElement.style.display = 'block';
+                    errorElement.innerHTML = `
+                        <h3>Error al cargar la aplicación</h3>
+                        <p><strong>Detalle:</strong> ${error.message}</p>
+                        <p><strong>Posibles causas:</strong></p>
+                        <ul>
+                            <li>Variables de entorno no configuradas correctamente en Netlify</li>
+                            <li>Token de API inválido o expirado</li>
+                            <li>ID de propiedad inválido o encriptación incorrecta</li>
+                            <li>Problema de conectividad</li>
+                        </ul>
+                        <p>Por favor, verifica la configuración e inténtalo de nuevo.</p>
+                        <button onclick="window.location.reload()" style="margin-top: 10px; padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            Reintentar
+                        </button>
+                    `;
+                }
+                
+                // Log environment info for debugging
+                console.log('🔍 Debug info:', {
+                    hostname: window.location.hostname,
+                    isProduction: window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1',
+                    hasENV: !!window.ENV,
+                    envKeys: window.ENV ? Object.keys(window.ENV) : 'No ENV object',
+                    hasEncryption: !!window.propertyEncryption,
+                    currentUrl: window.location.href
+                });
             }
         });
     </script>
