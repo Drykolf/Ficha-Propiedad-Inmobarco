@@ -250,11 +250,6 @@ class PropertyDetailController {
                                 ${this.formatCurrency(property.valor_arriendo1 || property.valor_venta1 || 0)}
                             </div>
                             
-                            <div class="property-location">
-                                <span class="location-icon">📍</span>
-                                ${property.barrio}, ${property.municipio}
-                            </div>
-                            
                             <div class="property-badges">
                                 <span class="property-badge type">${property.clase_inmueble || 'Inmueble'}</span>
                                 <span class="property-badge primary">${property.tipo_servicio || 'Disponible'}</span>
@@ -266,6 +261,8 @@ class PropertyDetailController {
                         
                         ${this.renderPropertyDescription(property)}
                         ${this.renderPropertyCharacteristics(property)}
+                        ${this.renderPropertyMap(property)}
+
                     </div>
                 </div>
             </div>
@@ -278,6 +275,9 @@ class PropertyDetailController {
         
         // Initialize gallery functionality
         this.initializeGallery(property.imagenes || []);
+
+        // Initialize map if coordinates are available
+        this.initializeMap(property);
     }
 
     // Render modern property images gallery
@@ -447,6 +447,53 @@ class PropertyDetailController {
         `;
     }
 
+    // Render property map with geolocation
+    renderPropertyMap(property) {
+        // Check if coordinates are available
+        if (!property.coordenadas) {
+            return '';
+        }
+
+        let lat, lng;
+
+        // Handle different coordinate formats
+        if (typeof property.coordenadas === 'string') {
+            // Format: "6.1562957:-75.6127396"
+            const coords = property.coordenadas.split(':');
+            if (coords.length !== 2) {
+                return '';
+            }
+            lat = parseFloat(coords[0]);
+            lng = parseFloat(coords[1]);
+        } else if (property.coordenadas.latitud && property.coordenadas.longitud) {
+            // Format: { latitud: "6.1562957", longitud: "-75.6127396" }
+            lat = parseFloat(property.coordenadas.latitud);
+            lng = parseFloat(property.coordenadas.longitud);
+        } else {
+            return '';
+        }
+
+        // Validate coordinates
+        if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) {
+            return '';
+        }
+
+        return `
+            <div class="property-map">
+                <h2 class="map-title">Ubicación</h2>
+                <div id="property-map-container" class="map-container" data-lat="${lat}" data-lng="${lng}" data-address="${property.barrio}, ${property.municipio}">
+                    <div class="map-loading">Cargando mapa...</div>
+                </div>
+                <div class="map-info">
+                    <div class="map-address">
+                        <span class="location-icon">📍</span>
+                        <span>${property.barrio}, ${property.municipio}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
 
     // Update page meta information
     updatePageMeta() {
@@ -512,6 +559,97 @@ class PropertyDetailController {
         if (mainImage) {
             mainImage.addEventListener('click', () => this.openModal(0));
         }
+    }
+
+    // Initialize property map
+    initializeMap(property) {
+        const mapContainer = document.getElementById('property-map-container');
+        if (!mapContainer) return;
+
+        const lat = parseFloat(mapContainer.dataset.lat);
+        const lng = parseFloat(mapContainer.dataset.lng);
+        const address = mapContainer.dataset.address;
+
+        if (isNaN(lat) || isNaN(lng)) return;
+
+        // Add small random offset for privacy (approximate location)
+        const offsetRange = 0.003; // ~400 meters max offset
+        const latOffset = (Math.random() - 0.5) * offsetRange;
+        const lngOffset = (Math.random() - 0.5) * offsetRange;
+        
+        const displayLat = lat + latOffset;
+        const displayLng = lng + lngOffset;
+
+        // Load Leaflet CSS and JS dynamically
+        this.loadMapResources().then(() => {
+            // Clear loading message
+            mapContainer.innerHTML = '';
+            
+            // Initialize the map with offset coordinates
+            const map = L.map('property-map-container').setView([displayLat, displayLng], 16);
+            
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+           /* 
+            const marker = L.marker([displayLat, displayLng]).addTo(map);
+           marker.bindPopup(`
+                <div class="map-popup">
+                    <strong>${property.clase_inmueble || 'Propiedad'}</strong><br>
+                    <small>${address}</small><br>
+                    <em>${property.tipo_servicio || ''}</em><br>
+                    <small style="color: #888;">📍 Ubicación aproximada</small>
+                </div>
+            `).openPopup();*/
+
+            L.circle([displayLat, displayLng], {
+                color: '#1B99D3',
+                fillColor: '#48BFF7',
+                fillOpacity: 0.2,
+                radius: 200
+            }).addTo(map);
+            
+        }).catch(error => {
+            console.error('Error loading map:', error);
+            mapContainer.innerHTML = `
+                <div class="map-error">
+                    <p>No se pudo cargar el mapa</p>
+                    <small>Ubicación aproximada</small>
+                </div>
+            `;
+        });
+    }
+
+    // Load Leaflet map resources dynamically
+    async loadMapResources() {
+        // Check if Leaflet is already loaded
+        if (typeof L !== 'undefined') {
+            return Promise.resolve();
+        }
+
+        return new Promise((resolve, reject) => {
+            // Load CSS
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+            link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+            link.crossOrigin = '';
+            document.head.appendChild(link);
+
+            // Load JavaScript
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+            script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+            script.crossOrigin = '';
+            
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('Failed to load Leaflet'));
+            
+            document.head.appendChild(script);
+        });
     }
 
     // Change main image
