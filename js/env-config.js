@@ -31,8 +31,6 @@ class EnvConfig {
                     encryption: {
                         key: window.ENV.VITE_ENCRYPTION_KEY,
                         salt: window.ENV.VITE_ENCRYPTION_SALT
-                        key: window.ENV.VITE_ENCRYPTION_KEY,
-                        salt: window.ENV.VITE_ENCRYPTION_SALT
                     }
                 };
             } else {
