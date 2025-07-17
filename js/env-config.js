@@ -13,6 +13,8 @@ class EnvConfig {
                               window.ENV.VITE_API_TOKEN && 
                               window.ENV.VITE_API_TOKEN !== '{{VITE_API_TOKEN}}' &&
                               window.ENV.VITE_API_TOKEN !== '';
+                              window.ENV.VITE_API_TOKEN !== '{{VITE_API_TOKEN}}' &&
+                              window.ENV.VITE_API_TOKEN !== '';
 
             if (hasEnvVars) {
                 this.config = {
@@ -27,6 +29,8 @@ class EnvConfig {
                         email: window.ENV.VITE_COMPANY_EMAIL || 'comercial@inmobarco.com'
                     },
                     encryption: {
+                        key: window.ENV.VITE_ENCRYPTION_KEY,
+                        salt: window.ENV.VITE_ENCRYPTION_SALT
                         key: window.ENV.VITE_ENCRYPTION_KEY,
                         salt: window.ENV.VITE_ENCRYPTION_SALT
                     }

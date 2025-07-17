@@ -18,6 +18,8 @@ const envVars = {
     VITE_COMPANY_EMAIL: process.env.VITE_COMPANY_EMAIL || 'comercial@inmobarco.com',
     VITE_ENCRYPTION_KEY: process.env.VITE_ENCRYPTION_KEY || '',
     VITE_ENCRYPTION_SALT: process.env.VITE_ENCRYPTION_SALT || ''
+    VITE_ENCRYPTION_KEY: process.env.VITE_ENCRYPTION_KEY || '',
+    VITE_ENCRYPTION_SALT: process.env.VITE_ENCRYPTION_SALT || ''
 };
 
 // Verificar variables críticas
@@ -27,6 +29,7 @@ const missingVars = criticalVars.filter(varName => !envVars[varName] || envVars[
 if (missingVars.length > 0) {
     console.warn('⚠️  Warning: Missing critical environment variables:', missingVars.join(', '));
     console.warn('🔗 Make sure to set these in Netlify: Site settings > Environment variables');
+    console.warn('🚨 The application may not work correctly without these variables');
 }
 
 // Generar el contenido del archivo JavaScript
