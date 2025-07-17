@@ -115,12 +115,20 @@ class PropertyEncryption {
             return false;
         }
         
+        // Reject purely numeric strings (like "1815", "123", etc.)
+        if (/^\d+$/.test(value)) {
+            return false;
+        }
+        
         // Check if it looks like a Base64 URL-safe string
         const base64UrlPattern = /^[A-Za-z0-9_-]+$/;
         const matchesPattern = base64UrlPattern.test(value);
         const hasMinLength = value.length >= 4;
         
-        return matchesPattern && hasMinLength;
+        // Additional check: encrypted values should have mixed characters
+        const hasMixedChars = /[A-Za-z]/.test(value) && /[0-9_-]/.test(value);
+        
+        return matchesPattern && hasMinLength && hasMixedChars;
     }
 
     // Generate encrypted URL for a property ID
