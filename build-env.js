@@ -21,8 +21,8 @@ const envVars = {
     VITE_COMPANY_NAME: process.env.VITE_COMPANY_NAME || 'Inmobarco',
     VITE_COMPANY_PHONE: process.env.VITE_COMPANY_PHONE || '573045258750',
     VITE_COMPANY_EMAIL: process.env.VITE_COMPANY_EMAIL || 'comercial@inmobarco.com',
-    VITE_ENCRYPTION_KEY: process.env.VITE_ENCRYPTION_KEY || 'InmobarcoDefault',
-    VITE_ENCRYPTION_SALT: process.env.VITE_ENCRYPTION_SALT || 'DefaultSalt'
+    VITE_ENCRYPTION_KEY: process.env.VITE_ENCRYPTION_KEY || '',
+    VITE_ENCRYPTION_SALT: process.env.VITE_ENCRYPTION_SALT || ''
 };
 
 console.log('🔍 Checking individual environment variables:');
@@ -35,14 +35,15 @@ Object.keys(envVars).forEach(key => {
 
 // Verificar variables críticas
 const criticalVars = ['VITE_API_TOKEN', 'VITE_ENCRYPTION_KEY', 'VITE_ENCRYPTION_SALT'];
-const missingVars = criticalVars.filter(varName => !envVars[varName] || envVars[varName] === 'InmobarcoDefault' || envVars[varName] === 'DefaultSalt');
+const missingVars = criticalVars.filter(varName => !envVars[varName] || envVars[varName] === '');
 
 if (missingVars.length > 0) {
-    console.warn('⚠️  Warning: The following critical environment variables are missing or using default values:');
+    console.warn('⚠️  Warning: The following critical environment variables are missing:');
     missingVars.forEach(varName => {
-        console.warn(`   - ${varName}: ${envVars[varName] || 'NOT SET'}`);
+        console.warn(`   - ${varName}: NOT SET`);
     });
     console.warn('🔗 Make sure to set these in Netlify: Site settings > Environment variables');
+    console.warn('🚨 The application may not work correctly without these variables');
 }
 
 // Generar el contenido del archivo JavaScript
