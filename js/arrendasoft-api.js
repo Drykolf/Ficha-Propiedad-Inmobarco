@@ -137,6 +137,12 @@ class PropertyDetailController {
             // Load property details
             this.property = await this.api.getProperty(this.propertyId);
 
+            // Validate property status - only show active properties
+            if (!this.property.estado_texto || this.property.estado_texto.toLowerCase() !== 'activa') {
+                console.warn(`🚫 Property ${this.propertyId} is not active. Status: ${this.property.estado_texto || 'Unknown'}`);
+                throw new Error('Property is not active or available');
+            }
+
             // Load agent information if available
             if (this.property.agent_document) {
                 try {
@@ -154,7 +160,9 @@ class PropertyDetailController {
             
             let errorMessage = error.message;
             if (error.message.includes('Property ID not found')) {
-                errorMessage = 'No se encontró un ID de propiedad válido en la URL. Asegúrate de usar una URL con ID encriptado.';
+                errorMessage = 'La propiedad solicitada no existe o no está disponible.';
+            } else if (error.message.includes('Property is not active')) {
+                errorMessage = 'La propiedad solicitada no existe o no está disponible.';
             } else if (error.message.includes('404') || error.message.includes('not found')) {
                 errorMessage = 'La propiedad solicitada no existe o no está disponible.';
             } else if (error.message.includes('401') || error.message.includes('unauthorized')) {
