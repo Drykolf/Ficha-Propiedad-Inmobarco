@@ -7,11 +7,6 @@ const fs = require('fs');
 const path = require('path');
 
 console.log('🔧 Generating env-vars.js with Netlify environment variables...');
-console.log('🌍 Current environment:', process.env.NODE_ENV || 'development');
-console.log('🔍 Available environment variables:');
-console.log('   - NETLIFY:', !!process.env.NETLIFY);
-console.log('   - BUILD_ID:', process.env.BUILD_ID || 'not set');
-console.log('   - CONTEXT:', process.env.CONTEXT || 'not set');
 
 // Obtener variables de entorno
 const envVars = {
@@ -21,27 +16,16 @@ const envVars = {
     VITE_COMPANY_NAME: process.env.VITE_COMPANY_NAME || 'Inmobarco',
     VITE_COMPANY_PHONE: process.env.VITE_COMPANY_PHONE || '573045258750',
     VITE_COMPANY_EMAIL: process.env.VITE_COMPANY_EMAIL || 'comercial@inmobarco.com',
-    VITE_ENCRYPTION_KEY: process.env.VITE_ENCRYPTION_KEY || 'InmobarcoDefault',
-    VITE_ENCRYPTION_SALT: process.env.VITE_ENCRYPTION_SALT || 'DefaultSalt'
+    VITE_ENCRYPTION_KEY: process.env.VITE_ENCRYPTION_KEY || '',
+    VITE_ENCRYPTION_SALT: process.env.VITE_ENCRYPTION_SALT || ''
 };
-
-console.log('🔍 Checking individual environment variables:');
-Object.keys(envVars).forEach(key => {
-    const value = process.env[key];
-    const isSensitive = key.includes('TOKEN') || key.includes('KEY') || key.includes('SALT');
-    const displayValue = isSensitive ? (value ? '***PROVIDED***' : 'NOT PROVIDED') : (value || 'NOT PROVIDED');
-    console.log(`   - ${key}: ${displayValue}`);
-});
 
 // Verificar variables críticas
 const criticalVars = ['VITE_API_TOKEN', 'VITE_ENCRYPTION_KEY', 'VITE_ENCRYPTION_SALT'];
-const missingVars = criticalVars.filter(varName => !envVars[varName] || envVars[varName] === 'InmobarcoDefault' || envVars[varName] === 'DefaultSalt');
+const missingVars = criticalVars.filter(varName => !envVars[varName] || envVars[varName] === '');
 
 if (missingVars.length > 0) {
-    console.warn('⚠️  Warning: The following critical environment variables are missing or using default values:');
-    missingVars.forEach(varName => {
-        console.warn(`   - ${varName}: ${envVars[varName] || 'NOT SET'}`);
-    });
+    console.warn('⚠️  Warning: Missing critical environment variables:', missingVars.join(', '));
     console.warn('🔗 Make sure to set these in Netlify: Site settings > Environment variables');
 }
 
@@ -53,13 +37,6 @@ const jsContent = `// Generated automatically by build-env.js during Netlify bui
 (function() {
     // Environment variables from Netlify
     window.ENV = ${JSON.stringify(envVars, null, 8)};
-
-    console.log('✅ Environment variables loaded from Netlify build:', {
-        hasApiUrl: !!window.ENV.VITE_API_BASE_URL,
-        hasToken: !!window.ENV.VITE_API_TOKEN,
-        instance: window.ENV.VITE_API_INSTANCE,
-        hasEncryption: !!window.ENV.VITE_ENCRYPTION_KEY
-    });
 })();
 `;
 
@@ -68,16 +45,14 @@ const outputPath = path.join(__dirname, 'js', 'env-vars.js');
 try {
     fs.writeFileSync(outputPath, jsContent, 'utf8');
     console.log('✅ env-vars.js generated successfully');
-    console.log('📍 File location:', outputPath);
     
     // Mostrar resumen de variables cargadas (sin valores sensibles)
-    console.log('📋 Variables loaded:');
-    Object.keys(envVars).forEach(key => {
+    const summary = Object.keys(envVars).map(key => {
         const value = envVars[key];
         const isSensitive = key.includes('TOKEN') || key.includes('KEY') || key.includes('SALT');
-        const displayValue = isSensitive ? (value ? '***SET***' : 'NOT SET') : value;
-        console.log(`   ${key}: ${displayValue}`);
+        return `${key}: ${isSensitive ? (value ? 'SET' : 'NOT SET') : value || 'NOT SET'}`;
     });
+    console.log('📋 Variables loaded:', summary.join(', '));
     
 } catch (error) {
     console.error('❌ Error writing env-vars.js:', error);

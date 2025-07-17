@@ -15,9 +15,9 @@
     --background-level2: #f8f9fa;    /* Nivel 2 - Gris muy claro (intermedio) */
     --background-level3: #f1f3f5;    /* Nivel 3 - Gris claro (fondo general) */
     
-    --white: #ffffff;                /* Blanco puro */
-    --black: #141F21;                /* Negro Inmobarco */
-    --border-color: #e9ecef;         /* Bordes suaves */
+    --white: #ffffff;                
+    --black: #141F21;                
+    --border-color: #e9ecef;         
     --shadow: 0 4px 20px rgba(27, 153, 211, 0.1);
     --shadow-hover: 0 8px 30px rgba(27, 153, 211, 0.15);
     --border-radius: 12px;
@@ -43,7 +43,6 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
-    margin-top: 0;
     background: transparent;
 }
 
@@ -470,13 +469,6 @@ body {
     margin: 0 auto;
     padding: 2rem;
     background: transparent;
-}
-
-.property-header {
-    background: var(--background-level1);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow);
-    overflow: hidden;
 }
 
 .property-main {

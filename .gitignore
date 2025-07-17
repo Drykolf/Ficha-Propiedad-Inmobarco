@@ -43,6 +43,7 @@ temp/
 config/secrets.js
 secrets.json
 api-keys.txt
+config.json
 
 # Backup files
 *.bak
@@ -55,7 +56,5 @@ api-keys.txt
 # Generated files during build (keep template, ignore generated)
 js/env-vars.js
 
-/debug-env.js
-/js/env-vars.js
-/generador-url.html
-/js/env-vars.local.js
+# Debug and temporary files
+/generador-urls.html

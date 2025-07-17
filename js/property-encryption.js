@@ -16,20 +16,23 @@ class PropertyEncryption {
                 this.key = encryptionConfig.key;
                 this.salt = encryptionConfig.salt;
             } else {
-                // Fallback to environment variables or defaults
-                this.key = window.ENV?.VITE_ENCRYPTION_KEY || 'InmobarcoSecretKey2025';
-                this.salt = window.ENV?.VITE_ENCRYPTION_SALT || 'PropertySalt';
+                // Fallback only if encryption config not provided
+                this.key = window.ENV?.VITE_ENCRYPTION_KEY || '';
+                this.salt = window.ENV?.VITE_ENCRYPTION_SALT || '';
+            }
+            
+            // Validate that we have proper encryption keys
+            if (!this.key || !this.salt || this.key === 'TU_CLAVE_DE_ENCRIPTACION_AQUI' || this.salt === 'TU_SALT_AQUI') {
+                console.error('❌ Invalid encryption configuration. Please set proper encryption keys.');
+                this.initialized = false;
+                return false;
             }
             
             this.initialized = true;
-            console.log('🔐 Property ID encryption initialized');
             return true;
         } catch (error) {
             console.error('❌ Failed to initialize encryption:', error);
-            // Fallback to default values
-            this.key = 'InmobarcoSecretKey2025';
-            this.salt = 'PropertySalt';
-            this.initialized = true;
+            this.initialized = false;
             return false;
         }
     }
@@ -37,7 +40,8 @@ class PropertyEncryption {
     // Simple XOR-based encryption with Base64 encoding
     encrypt(propertyId) {
         if (!this.initialized) {
-            this.init();
+            console.error('❌ Encryption not initialized. Cannot encrypt property ID.');
+            return null;
         }
 
         try {
@@ -62,14 +66,15 @@ class PropertyEncryption {
             return urlSafe;
         } catch (error) {
             console.error('❌ Encryption failed:', error);
-            return propertyId; // Fallback to original ID
+            return null;
         }
     }
 
     // Decrypt the encrypted property ID
     decrypt(encryptedId) {
         if (!this.initialized) {
-            this.init();
+            console.error('❌ Encryption not initialized. Cannot decrypt property ID.');
+            return null;
         }
 
         try {
@@ -106,19 +111,35 @@ class PropertyEncryption {
 
     // Validate if a string looks like an encrypted ID
     isEncrypted(value) {
-        if (!value || typeof value !== 'string') return false;
+        if (!value || typeof value !== 'string') {
+            return false;
+        }
         
         // Check if it looks like a Base64 URL-safe string
         const base64UrlPattern = /^[A-Za-z0-9_-]+$/;
-        return base64UrlPattern.test(value) && value.length > 4;
+        const matchesPattern = base64UrlPattern.test(value);
+        const hasMinLength = value.length >= 4;
+        
+        return matchesPattern && hasMinLength;
     }
 
     // Generate encrypted URL for a property ID
     generatePropertyUrl(propertyId, baseUrl = window.location.origin) {
         const encryptedId = this.encrypt(propertyId);
-        const url = new URL(baseUrl);
-        url.searchParams.set('id', encryptedId);
-        return url.toString();
+        
+        if (!encryptedId) {
+            console.error('❌ Cannot generate URL: encryption failed for property ID:', propertyId);
+            return null;
+        }
+        
+        try {
+            const url = new URL(baseUrl);
+            url.searchParams.set('id', encryptedId);
+            return url.toString();
+        } catch (error) {
+            console.error('❌ Failed to generate property URL:', error);
+            return null;
+        }
     }
 
     // Extract and decrypt property ID from current URL
@@ -126,17 +147,23 @@ class PropertyEncryption {
         const urlParams = new URLSearchParams(window.location.search);
         const idParam = urlParams.get('id');
         
-        if (!idParam) return null;
+        if (!idParam) {
+            return null;
+        }
         
-        // Check if it's encrypted
+        // Only accept encrypted IDs
         if (this.isEncrypted(idParam)) {
             const decryptedId = this.decrypt(idParam);
-            console.log('🔓 Decrypted property ID:', decryptedId);
-            return decryptedId;
+            if (decryptedId) {
+                return decryptedId;
+            } else {
+                console.error('❌ Failed to decrypt property ID:', idParam);
+                return null;
+            }
         } else {
-            // Legacy support for non-encrypted IDs
-            console.log('⚠️ Using non-encrypted property ID (legacy mode)');
-            return idParam;
+            // Reject non-encrypted IDs
+            console.error('❌ Property ID must be encrypted. Non-encrypted IDs are not allowed:', idParam);
+            return null;
         }
     }
 }
@@ -147,17 +174,50 @@ window.propertyEncryption = new PropertyEncryption();
 // Debug helpers for development
 if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     window.debugEncryption = {
-        encrypt: (id) => window.propertyEncryption.encrypt(id),
-        decrypt: (encrypted) => window.propertyEncryption.decrypt(encrypted),
-        generateUrl: (id) => window.propertyEncryption.generatePropertyUrl(id),
+        encrypt: (id) => {
+            const result = window.propertyEncryption.encrypt(id);
+            console.log(`🔐 Encrypted ID ${id} → ${result}`);
+            return result;
+        },
+        decrypt: (encrypted) => {
+            const result = window.propertyEncryption.decrypt(encrypted);
+            console.log(`🔓 Decrypted ${encrypted} → ${result}`);
+            return result;
+        },
+        generateUrl: (id) => {
+            const result = window.propertyEncryption.generatePropertyUrl(id);
+            console.log(`🌐 Generated URL for ID ${id} → ${result}`);
+            return result;
+        },
+        validateUrl: (url) => {
+            const urlObj = new URL(url);
+            const idParam = urlObj.searchParams.get('id');
+            const isValid = window.propertyEncryption.isEncrypted(idParam);
+            console.log(`✅ URL validation: ${url} → ID: ${idParam} → Valid: ${isValid}`);
+            return isValid;
+        },
         test: () => {
+            console.log('🧪 Testing encryption (encrypted IDs only):');
+            console.log('⚠️ Note: Only encrypted IDs are now accepted by the system');
+            
             const testIds = ['123', '456', '1815', '9999'];
-            console.log('🧪 Testing encryption:');
             testIds.forEach(id => {
                 const encrypted = window.propertyEncryption.encrypt(id);
                 const decrypted = window.propertyEncryption.decrypt(encrypted);
-                console.log(`ID: ${id} → Encrypted: ${encrypted} → Decrypted: ${decrypted}`);
+                const isValid = window.propertyEncryption.isEncrypted(encrypted);
+                console.log(`ID: ${id} → Encrypted: ${encrypted} → Decrypted: ${decrypted} → Valid: ${isValid}`);
+            });
+            
+            // Test invalid scenarios
+            console.log('\n🚫 Testing rejection of non-encrypted IDs:');
+            const plainIds = ['123', 'abc', '1815'];
+            plainIds.forEach(id => {
+                const isValid = window.propertyEncryption.isEncrypted(id);
+                console.log(`Plain ID: ${id} → Accepted: ${isValid} (should be false)`);
             });
         }
     };
+    
+    console.log('🛠️ Debug tools available: window.debugEncryption');
+    console.log('📝 Usage: debugEncryption.test() to run encryption tests');
 }

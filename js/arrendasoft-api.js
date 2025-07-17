@@ -104,38 +104,32 @@ class PropertyDetailController {
 
     // Extract property ID from URL
     getPropertyIdFromUrl() {
-        // Use the encryption module to get and decrypt the property ID
-        if (window.propertyEncryption) {
-            const propertyId = window.propertyEncryption.getPropertyIdFromUrl();
-            if (propertyId) return propertyId;
+        // ONLY use the encryption module - no fallbacks
+        if (!window.propertyEncryption) {
+            console.error('❌ Property encryption module not available. Cannot process property ID.');
+            return null;
         }
 
-        // Fallback to legacy method if encryption module is not available
-        console.warn('⚠️ Property encryption module not available, using fallback method');
+        if (!window.propertyEncryption.initialized) {
+            console.error('❌ Property encryption module not initialized.');
+            return null;
+        }
+
+        const propertyId = window.propertyEncryption.getPropertyIdFromUrl();
         
-        // Option 1: From query parameter ?id=123
-        const urlParams = new URLSearchParams(window.location.search);
-        const idParam = urlParams.get('id');
-
-        if (idParam) return idParam;
-
-        // Option 2: From path like /property/123
-        const pathParts = window.location.pathname.split('/');
-        const propertyIndex = pathParts.findIndex(part => part === 'property');
-
-        if (propertyIndex !== -1 && pathParts[propertyIndex + 1]) {
-            return pathParts[propertyIndex + 1];
+        if (!propertyId) {
+            console.error('❌ Failed to get encrypted property ID from URL');
+            return null;
         }
 
-        // Option 3: From last part of URL
-        return pathParts[pathParts.length - 1];
+        return propertyId;
     }
 
     // Load property data
     async loadProperty() {
         try {
             if (!this.propertyId) {
-                throw new Error('Property ID not found in URL');
+                throw new Error('Property ID not found in URL. Make sure the URL contains an encrypted ID parameter.');
             }
 
             this.showLoading();
@@ -156,8 +150,18 @@ class PropertyDetailController {
             this.updatePageMeta();
 
         } catch (error) {
-            console.error('Error loading property:', error);
-            this.showError(error.message);
+            console.error('❌ Error loading property:', error);
+            
+            let errorMessage = error.message;
+            if (error.message.includes('Property ID not found')) {
+                errorMessage = 'No se encontró un ID de propiedad válido en la URL. Asegúrate de usar una URL con ID encriptado.';
+            } else if (error.message.includes('404') || error.message.includes('not found')) {
+                errorMessage = 'La propiedad solicitada no existe o no está disponible.';
+            } else if (error.message.includes('401') || error.message.includes('unauthorized')) {
+                errorMessage = 'Error de autenticación. Verifica la configuración del token API.';
+            }
+            
+            this.showError(errorMessage);
         } finally {
             this.hideLoading();
         }
@@ -619,32 +623,76 @@ class PropertyDetailController {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
-    // Load configuration from config.json
-    const config = await ConfigLoader.loadConfig();
-    let apiConfig;
-    
-    if (typeof SecureAPIConfig !== 'undefined') {
-        const secureConfig = new SecureAPIConfig();
-        apiConfig = {
-            baseUrl: secureConfig.getAPIUrl(),
-            token: secureConfig.getAuthToken(),
-            instance: secureConfig.getInstance()
-        };
-        console.log('✅ Using secure API configuration');
-    } else {
-        // Use configuration from config.json
-        apiConfig = config.api;
-        console.log('✅ Using configuration from config.json');
+    try {
+        // Load configuration first
+        const envConfig = new EnvConfig();
+        const config = await envConfig.loadConfig();
+        
+        if (!config) {
+            throw new Error('Failed to load configuration');
+        }
+
+        // Initialize encryption module with config
+        if (window.propertyEncryption) {
+            const encryptionSuccess = window.propertyEncryption.init(config.encryption);
+            if (!encryptionSuccess) {
+                throw new Error('Failed to initialize encryption module');
+            }
+        } else {
+            throw new Error('Property encryption module not available');
+        }
+
+        // Set up API configuration
+        let apiConfig;
+        if (typeof SecureAPIConfig !== 'undefined') {
+            const secureConfig = new SecureAPIConfig();
+            apiConfig = {
+                baseUrl: secureConfig.getAPIUrl(),
+                token: secureConfig.getAuthToken(),
+                instance: secureConfig.getInstance()
+            };
+        } else {
+            // Use configuration from loaded config
+            apiConfig = config.api;
+        }
+
+        // Create global controller instance with loaded configuration
+        window.propertyController = new PropertyDetailController(apiConfig);
+        
+        // Store company configuration globally for contact methods
+        window.companyConfig = config.company;
+
+        // Initialize the property detail page
+        await window.propertyController.init();
+
+    } catch (error) {
+        console.error('❌ Failed to initialize application:', error);
+        
+        // Show error to user
+        const errorEl = document.getElementById('error');
+        if (errorEl) {
+            errorEl.innerHTML = `
+                <div class="error-container">
+                    <h2>Error de Configuración</h2>
+                    <p>${error.message}</p>
+                    <div class="error-details">
+                        <p>Posibles causas:</p>
+                        <ul>
+                            <li>El archivo config.json no está configurado correctamente</li>
+                            <li>Las claves de encriptación no están definidas</li>
+                            <li>El ID en la URL no está encriptado</li>
+                        </ul>
+                        <p>Ver <a href="./ENCRIPTACION.md" target="_blank">documentación de encriptación</a> para más información.</p>
+                    </div>
+                </div>
+            `;
+            errorEl.style.display = 'block';
+        }
+        
+        // Hide loading
+        const loadingEl = document.getElementById('loading');
+        if (loadingEl) loadingEl.style.display = 'none';
     }
-
-    // Create global controller instance with loaded configuration
-    window.propertyController = new PropertyDetailController(apiConfig);
-    
-    // Store company configuration globally for contact methods
-    window.companyConfig = config.company;
-
-    // Initialize the property detail page
-    window.propertyController.init();
 });
 
 // Export for module usage
