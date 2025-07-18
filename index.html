@@ -7,19 +7,26 @@
     <meta name="description" content="Encuentra la propiedad perfecta en Inmobarco. Propiedades en venta y arriendo con la mejor ubicación y precios.">
     <meta name="keywords" content="inmuebles, propiedades, venta, arriendo, Inmobarco">
     
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Inmobarco">
     <meta property="og:url" content="">
-    <meta property="og:title" content="Detalles de Propiedad - Inmobarco">
-    <meta property="og:description" content="Encuentra la propiedad perfecta en Inmobarco">
+    <meta property="og:title" content="🏠 Propiedad en Inmobarco">
+    <meta property="og:description" content="Encuentra la propiedad perfecta | Tu hogar ideal te está esperando">
     <meta property="og:image" content="">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Vista de propiedad en Inmobarco">
+    <meta property="og:locale" content="es_CO">
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="">
-    <meta property="twitter:title" content="Detalles de Propiedad - Inmobarco">
-    <meta property="twitter:description" content="Encuentra la propiedad perfecta en Inmobarco">
-    <meta property="twitter:image" content="">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@Inmobarco">
+    <meta name="twitter:url" content="">
+    <meta name="twitter:title" content="🏠 Propiedad en Inmobarco">
+    <meta name="twitter:description" content="Encuentra la propiedad perfecta | Tu hogar ideal te está esperando">
+    <meta name="twitter:image" content="">
+    <meta name="twitter:image:alt" content="Vista de propiedad en Inmobarco">
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="assets/images/Logo.png">
@@ -27,6 +34,7 @@
     
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/property-detail-styles.css">
+    <link rel="stylesheet" href="css/preview-generator.css">
     
     <!-- Preload critical resources -->
     <link rel="preload" href="js/arrendasoft-api.js" as="script">
@@ -34,13 +42,16 @@
     <!-- Structured Data -->
     <script type="application/ld+json" id="property-schema">
     {
-        "@context": "http://schema.org",
+        "@context": "https://schema.org",
         "@type": "RealEstate",
         "name": "Propiedad en Inmobarco",
+        "description": "Encuentra la propiedad perfecta en Inmobarco",
         "provider": {
-            "@type": "Organization",
+            "@type": "RealEstateAgent",
             "name": "Inmobarco",
-            "url": "https://inmobarco.com"
+            "url": "https://inmobarco.com",
+            "telephone": "+57 304 525 8750",
+            "email": "comercial@inmobarco.com"
         }
     }
     </script>

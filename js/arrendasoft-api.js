@@ -142,16 +142,7 @@ class PropertyDetailController {
                 console.warn(`🚫 Property ${this.propertyId} is not active. Status: ${this.property.estado_texto || 'Unknown'}`);
                 throw new Error('Property is not active or available');
             }
-
-            // Load agent information if available
-            if (this.property.agent_document) {
-                try {
-                    this.agent = await this.api.getAgent(this.property.agent_document);
-                } catch (error) {
-                    console.warn('Could not load agent information:', error);
-                }
-            }
-
+            
             this.renderProperty();
             this.updatePageMeta();
 
@@ -595,52 +586,180 @@ class PropertyDetailController {
     }
 
 
-    // Update page meta information
+    // Update page meta information for elegant social previews
     updatePageMeta() {
         if (!this.property) return;
 
-        // Get the correct title
-        const propertyTitle = this.property.clase_inmueble + ' en ' + this.property.municipio || this.property.title || 'Propiedad';
+        const property = this.property;
+        
+        // Generate clean property info
+        const propertyType = property.clase_inmueble || 'Propiedad';
+        const location = property.municipio || '';
+        const serviceType = property.tipo_servicio || 'Disponible';
+        const price = this.formatCurrency(property.valor_arriendo1 || property.valor_venta1 || 0);
+        const rooms = property.habitaciones || this.getCharacteristicValue('Habitaciones');
+        const bathrooms = property.banos || this.getCharacteristicValue('Baños');
+
+        // Create elegant title for social sharing
+        const socialTitle = `🏠 ${propertyType} en ${location}`;
+        
+        // Create elegant description with key details
+        let socialDescription = `${serviceType} ${price}`;
+        if (rooms) socialDescription += ` | ${rooms} hab`;
+        if (bathrooms) socialDescription += `, ${bathrooms} baños`;
 
         // Update page title
-        document.title = `${propertyTitle} - Inmobarco`;
+        document.title = `${socialTitle} - Inmobarco`;
 
         // Update meta description
-        const metaDescription = document.querySelector('meta[name="description"]');
-        if (metaDescription) {
-            metaDescription.setAttribute('content', 
-                `${propertyTitle} - ${this.formatCurrency(this.property.precio || this.property.price)} - ${this.property.ubicacion || this.property.location || 'Ubicación disponible'}`
-            );
-        }
+        this.updateMetaTag('description', socialDescription);
 
-        // Update Open Graph meta tags
-        this.updateOGTags();
+        // Update Open Graph tags for WhatsApp/Facebook
+        this.updateOGTags(socialTitle, socialDescription);
+        
+        // Update Twitter tags
+        this.updateTwitterTags(socialTitle, socialDescription);
+        
+        // Update structured data
+        this.updateStructuredData(property);
     }
 
-    // Update Open Graph tags
-    updateOGTags() {
-        const propertyTitle = this.property.clase_inmueble + ' en ' + this.property.municipio || this.property.title || 'Propiedad';
-        const propertyDescription = this.property.descripcion || this.property.description || `${propertyTitle} en Inmobarco`;
-        const propertyImage = this.property.imagenes?.[0]?.url || this.property.images?.[0] || this.property.main_image;
+    // Helper to get characteristic value
+    getCharacteristicValue(descripcion) {
+        if (!this.property.caracteristicas || !Array.isArray(this.property.caracteristicas)) return null;
+        const characteristic = this.property.caracteristicas.find(c => 
+            c.descripcion.toLowerCase().includes(descripcion.toLowerCase())
+        );
+        return characteristic ? characteristic.valor : null;
+    }
+
+    // Update Open Graph tags for elegant social previews
+    updateOGTags(title, description) {
+        const property = this.property;
+        let propertyImage = property.imagenes?.[0]?.imagen || '';
+        
+        // Si no hay imagen, usar logo de Inmobarco o generar una por defecto
+        if (!propertyImage) {
+            propertyImage = window.location.origin + '/assets/images/Logo.png';
+        }
         
         const ogTags = {
-            'og:title': propertyTitle,
-            'og:description': propertyDescription,
+            'og:title': title,
+            'og:description': description,
+            'og:url': window.location.href,
             'og:image': propertyImage,
-            'og:url': window.location.href
+            'og:image:alt': `${title} - Imagen principal`,
+            'og:type': 'article',
+            'og:site_name': 'Inmobarco',
+            'og:locale': 'es_CO'
         };
 
         Object.entries(ogTags).forEach(([property, content]) => {
             if (content) {
-                let metaTag = document.querySelector(`meta[property="${property}"]`);
-                if (!metaTag) {
-                    metaTag = document.createElement('meta');
-                    metaTag.setAttribute('property', property);
-                    document.head.appendChild(metaTag);
-                }
-                metaTag.setAttribute('content', content);
+                this.updateMetaTag(property, content, 'property');
             }
         });
+    }
+
+    // Update Twitter tags
+    updateTwitterTags(title, description) {
+        const property = this.property;
+        let propertyImage = property.imagenes?.[0]?.imagen || '';
+        
+        // Si no hay imagen, usar logo de Inmobarco
+        if (!propertyImage) {
+            propertyImage = window.location.origin + '/assets/images/Logo.png';
+        }
+        
+        const twitterTags = {
+            'twitter:title': title,
+            'twitter:description': description,
+            'twitter:url': window.location.href,
+            'twitter:image': propertyImage,
+            'twitter:image:alt': `${title} - Imagen principal`,
+            'twitter:card': 'summary_large_image',
+            'twitter:site': '@Inmobarco'
+        };
+
+        Object.entries(twitterTags).forEach(([name, content]) => {
+            if (content) {
+                this.updateMetaTag(name, content, 'name');
+            }
+        });
+    }
+
+    // Helper method to update meta tags
+    updateMetaTag(name, content, attribute = 'name') {
+        let selector;
+        if (attribute === 'property') {
+            selector = `meta[property="${name}"]`;
+        } else {
+            selector = `meta[${attribute}="${name}"]`;
+        }
+        
+        let meta = document.querySelector(selector);
+        if (!meta) {
+            meta = document.createElement('meta');
+            if (attribute === 'property') {
+                meta.setAttribute('property', name);
+            } else {
+                meta.setAttribute(attribute, name);
+            }
+            document.head.appendChild(meta);
+        }
+        meta.setAttribute('content', content);
+    }
+
+    // Update structured data with property information
+    updateStructuredData(property) {
+        const propertyType = property.clase_inmueble || 'Propiedad';
+        const location = property.municipio || '';
+        const price = property.valor_arriendo1 || property.valor_venta1 || null;
+        const propertyImage = property.imagenes?.[0]?.imagen || '';
+
+        const structuredData = {
+            "@context": "https://schema.org",
+            "@type": "RealEstate",
+            "name": `${propertyType} en ${location}`,
+            "description": property.observaciones || property.descripcion || `${propertyType} en ${location}`,
+            "image": propertyImage,
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": property.direccion || "",
+                "addressLocality": property.municipio || "",
+                "addressRegion": property.departamento || "",
+                "addressCountry": "CO"
+            },
+            "numberOfRooms": property.habitaciones || null,
+            "numberOfBathrooms": property.banos || null,
+            "floorSize": property.area ? {
+                "@type": "QuantitativeValue",
+                "value": property.area,
+                "unitCode": "MTK"
+            } : null,
+            "provider": {
+                "@type": "RealEstateAgent",
+                "name": "Inmobarco",
+                "url": "https://inmobarco.com",
+                "telephone": "+57 304 525 8750",
+                "email": "comercial@inmobarco.com"
+            },
+            "offers": price ? {
+                "@type": "Offer",
+                "price": price,
+                "priceCurrency": "COP",
+                "availability": property.estado_texto === 'Activa' ? "InStock" : "OutOfStock"
+            } : null
+        };
+
+        // Remove null values
+        const cleanData = JSON.parse(JSON.stringify(structuredData, (key, value) => value === null ? undefined : value));
+
+        // Update structured data script
+        let script = document.getElementById('property-schema');
+        if (script) {
+            script.textContent = JSON.stringify(cleanData, null, 2);
+        }
     }
 
     // Initialize the controller
@@ -1046,6 +1165,72 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (loadingEl) loadingEl.style.display = 'none';
     }
 });
+
+// Debug helpers for social media previews (development only)
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    window.socialDebug = {
+        // Show current social media tags
+        showPreviewTags: () => {
+            console.log('📱 Social Media Preview Tags:');
+            
+            const ogTitle = document.querySelector('meta[property="og:title"]')?.content;
+            const ogDescription = document.querySelector('meta[property="og:description"]')?.content;
+            const ogImage = document.querySelector('meta[property="og:image"]')?.content;
+            const ogUrl = document.querySelector('meta[property="og:url"]')?.content;
+            
+            console.log('🎯 WhatsApp/Facebook Preview:');
+            console.log(`📝 Título: ${ogTitle}`);
+            console.log(`📄 Descripción: ${ogDescription}`);
+            console.log(`🖼️ Imagen: ${ogImage}`);
+            console.log(`🔗 URL: ${ogUrl}`);
+            
+            const twitterTitle = document.querySelector('meta[name="twitter:title"]')?.content;
+            const twitterDesc = document.querySelector('meta[name="twitter:description"]')?.content;
+            const twitterImage = document.querySelector('meta[name="twitter:image"]')?.content;
+            
+            console.log('\n🐦 Twitter Preview:');
+            console.log(`📝 Título: ${twitterTitle}`);
+            console.log(`📄 Descripción: ${twitterDesc}`);
+            console.log(`🖼️ Imagen: ${twitterImage}`);
+        },
+        
+        // Test preview with sample data
+        testPreview: () => {
+            if (window.propertyController && window.propertyController.property) {
+                console.log('🔄 Regenerando preview con datos actuales...');
+                window.propertyController.updatePageMeta();
+                setTimeout(() => {
+                    window.socialDebug.showPreviewTags();
+                }, 100);
+            } else {
+                console.log('❌ No hay propiedad cargada para generar preview');
+            }
+        },
+        
+        // Generate Facebook debugger URL
+        getFacebookDebugUrl: () => {
+            const currentUrl = encodeURIComponent(window.location.href);
+            const debugUrl = `https://developers.facebook.com/tools/debug/?q=${currentUrl}`;
+            console.log('🔍 Facebook Debugger URL:', debugUrl);
+            return debugUrl;
+        },
+        
+        // Generate Twitter Card Validator URL
+        getTwitterValidatorUrl: () => {
+            const currentUrl = encodeURIComponent(window.location.href);
+            const validatorUrl = `https://cards-dev.twitter.com/validator?url=${currentUrl}`;
+            console.log('🔍 Twitter Card Validator URL:', validatorUrl);
+            return validatorUrl;
+        }
+    };
+    
+    console.log('🛠️ Debug de previews sociales disponible: window.socialDebug');
+    console.log('📝 Comandos:');
+    console.log('  - socialDebug.showPreviewTags() // Mostrar tags actuales');
+    console.log('  - socialDebug.testPreview() // Regenerar preview');
+    console.log('  - socialDebug.getFacebookDebugUrl() // URL para debugger de Facebook');
+    console.log('  - socialDebug.getTwitterValidatorUrl() // URL para validador de Twitter');
+}
 
 // Export for module usage
 if (typeof module !== 'undefined' && module.exports) {
