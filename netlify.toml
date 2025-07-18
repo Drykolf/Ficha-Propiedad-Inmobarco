@@ -53,9 +53,19 @@
   to = "/.netlify/functions/test"
   status = 200
 
+[[redirects]]
+  from = "/preview-test"
+  to = "/.netlify/functions/social-preview-test"
+  status = 200
+
 # Alternative URL format support
 [[redirects]]
   from = "/propiedad/*"
+  to = "/.netlify/functions/property-ssr?id=:splat"
+  status = 200
+
+[[redirects]]
+  from = "/propiedades/*"
   to = "/.netlify/functions/property-ssr?id=:splat"
   status = 200
 
@@ -69,10 +79,15 @@
   to = "/.netlify/functions/property-ssr"
   status = 200
 
-# Main SSR redirects (lower priority)
+[[redirects]]
+  from = "/propiedades/"
+  to = "/.netlify/functions/property-ssr"
+  status = 200
+
+# Main SSR redirects (lower priority) - preserve query params
 [[redirects]]
   from = "/"
-  to = "/.netlify/functions/property-ssr"
+  to = "/.netlify/functions/root-debug"
   status = 200
 
 [[redirects]]

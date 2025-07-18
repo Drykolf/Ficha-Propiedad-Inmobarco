@@ -239,12 +239,18 @@ exports.handler = async (event, context) => {
     console.log(`📋 Query params:`, queryStringParameters);
     console.log(`🌐 Raw URL:`, event.rawUrl);
     console.log(`📍 Raw Query:`, event.rawQuery);
+    console.log(`🤖 User Agent:`, headers['user-agent']);
     console.log(`🔗 Event details:`, {
         path: event.path,
         httpMethod: event.httpMethod,
         isBase64Encoded: event.isBase64Encoded,
         headers: event.headers['host']
     });
+    
+    // Check if this is a social media crawler
+    const userAgent = headers['user-agent'] || '';
+    const isCrawler = /facebookexternalhit|whatsapp|twitterbot|linkedinbot|slackbot|telegrambot|skypeuri|discordbot/i.test(userAgent);
+    console.log(`🕷️ Is social media crawler: ${isCrawler}`);
     
     // Only handle GET requests
     if (httpMethod !== 'GET') {
@@ -318,7 +324,11 @@ exports.handler = async (event, context) => {
             headers: {
                 'Content-Type': 'text/html; charset=utf-8',
                 'Cache-Control': 'public, max-age=300',
-                'X-Prerendered': 'true'
+                'X-Prerendered': 'true',
+                'X-Robots-Tag': 'index, follow',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, User-Agent'
             },
             body: generateHTML(metaTags, property, currentUrl)
         };
