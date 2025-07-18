@@ -1,6 +1,7 @@
 [build]
   publish = "."
   command = "echo 'Building Inmobarco Property Template...' && node build-env.js && echo 'Build completed - Static site ready with environment variables'"
+  functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "18"
@@ -15,6 +16,73 @@
   # - VITE_ENCRYPTION_KEY
   # - VITE_ENCRYPTION_SALT
 
+# Main redirect: index.html with id parameter to SSR function
+[[redirects]]
+  from = "/index.html"
+  to = "/.netlify/functions/property-ssr"
+  status = 200
+  force = true
+
+# Root redirect with id parameter to SSR function  
+[[redirects]]
+  from = "/"
+  to = "/.netlify/functions/property-ssr"
+  status = 200
+  force = true
+
+# Optional: Support for /propiedad/ format as well
+[[redirects]]
+  from = "/propiedad/*"
+  to = "/.netlify/functions/property-ssr?id=:splat"
+  status = 200
+
+# Fallback to static files for assets
+[[redirects]]
+  from = "/assets/*"
+  to = "/assets/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/css/*"
+  to = "/css/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/js/*"
+  to = "/js/:splat"
+  status = 200
+
+# Exclude common static files from SSR
+[[redirects]]
+  from = "/favicon.ico"
+  to = "/favicon.ico"
+  status = 200
+
+[[redirects]]
+  from = "/robots.txt"
+  to = "/robots.txt"
+  status = 200
+
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/sitemap.xml"
+  status = 200
+
+# Final fallback for any other routes
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/property-ssr"
+  status = 200
+
+# Cache headers for Netlify Functions
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    cache-control = "public, max-age=300"
+    x-content-type-options = "nosniff"
+    x-prerendered = "netlify-function"
+
+# Security and performance headers for all pages
 [[headers]]
   for = "/*"
   [headers.values]
@@ -58,3 +126,10 @@
   for = "*.svg"
   [headers.values]
     Cache-Control = "public, max-age=604800"
+
+# Headers específicos para assets del directorio assets/
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000"
+    Access-Control-Allow-Origin = "*"

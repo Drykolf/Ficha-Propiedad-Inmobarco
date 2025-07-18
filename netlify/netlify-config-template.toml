@@ -1,0 +1,76 @@
+# Netlify Functions Configuration for Property SSR
+# 
+# This file shows the recommended configuration for netlify.toml
+# Copy these settings to your netlify.toml file when ready to deploy
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Main redirect: index.html with id parameter to SSR function
+[[redirects]]
+  from = "/index.html"
+  to = "/.netlify/functions/property-ssr"
+  status = 200
+  force = true
+
+# Root redirect with id parameter to SSR function  
+[[redirects]]
+  from = "/"
+  to = "/.netlify/functions/property-ssr"
+  status = 200
+  force = true
+
+# Optional: Support for /propiedad/ format as well
+[[redirects]]
+  from = "/propiedad/*"
+  to = "/.netlify/functions/property-ssr?id=:splat"
+  status = 200
+
+# Fallback to static files for assets
+[[redirects]]
+  from = "/assets/*"
+  to = "/assets/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/css/*"
+  to = "/css/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/js/*"
+  to = "/js/:splat"
+  status = 200
+
+# Final fallback for any other routes
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/property-ssr"
+  status = 200
+
+# Cache headers for functions
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    cache-control = "public, max-age=300"
+    x-content-type-options = "nosniff"
+
+# Cache headers for static assets
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    cache-control = "public, max-age=31536000"
+
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    cache-control = "public, max-age=31536000"
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    cache-control = "public, max-age=31536000"

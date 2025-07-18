@@ -128,6 +128,22 @@ class PropertyDetailController {
     // Load property data
     async loadProperty() {
         try {
+            // Check if property data was preloaded by Netlify Function
+            if (window.PRELOADED_PROPERTY) {
+                console.log('📦 Using preloaded property data from Netlify Function');
+                this.property = window.PRELOADED_PROPERTY;
+                
+                // Validate preloaded property status
+                if (!this.property.estado_texto || this.property.estado_texto.toLowerCase() !== 'activa') {
+                    console.warn(`🚫 Preloaded property is not active. Status: ${this.property.estado_texto || 'Unknown'}`);
+                    throw new Error('Property is not active or available');
+                }
+                
+                this.renderProperty();
+                this.updatePageMeta();
+                return;
+            }
+
             if (!this.propertyId) {
                 throw new Error('Property ID not found in URL. Make sure the URL contains an encrypted ID parameter.');
             }
@@ -142,7 +158,7 @@ class PropertyDetailController {
                 console.warn(`🚫 Property ${this.propertyId} is not active. Status: ${this.property.estado_texto || 'Unknown'}`);
                 throw new Error('Property is not active or available');
             }
-            
+
             this.renderProperty();
             this.updatePageMeta();
 
@@ -338,8 +354,8 @@ class PropertyDetailController {
     // Render gallery navigation buttons
     renderGalleryNavigation() {
         return `
-            <button class="gallery-nav prev" onclick="propertyController.changeImage(-1)" aria-label="Imagen anterior">‹</button>
-            <button class="gallery-nav next" onclick="propertyController.changeImage(1)" aria-label="Imagen siguiente">›</button>
+            <button class="gallery-nav prev" aria-label="Imagen anterior">‹</button>
+            <button class="gallery-nav next" aria-label="Imagen siguiente">›</button>
         `;
     }
 
@@ -348,7 +364,7 @@ class PropertyDetailController {
         return `
             <div class="thumbnail-grid">
                 ${thumbnails.map((img, index) => `
-                    <div class="thumbnail-item" onclick="propertyController.setMainImage(${index + 1})">
+                    <div class="thumbnail-item" data-index="${index + 1}">
                         <img src="${img.imagen}" alt="Imagen ${index + 2}" class="thumbnail-image" loading="lazy">
                         ${index === (thumbnailCount - 1) && totalImages > thumbnailCount + 1 ? `
                             <div class="thumbnail-overlay">+${totalImages - thumbnailCount - 1}</div>
@@ -367,16 +383,15 @@ class PropertyDetailController {
         return `
             <div class="gallery-modal" id="gallery-modal">
                 <div class="modal-content">
-                    <button class="modal-close" onclick="propertyController.closeModal()">×</button>
+                    <button class="modal-close">×</button>
                     <img src="" alt="" class="modal-image" id="modal-image">
-                    <button class="modal-nav prev" onclick="propertyController.changeModalImage(-1)">‹</button>
-                    <button class="modal-nav next" onclick="propertyController.changeModalImage(1)">›</button>
+                    <button class="modal-nav prev">‹</button>
+                    <button class="modal-nav next">›</button>
                     <div class="modal-counter" id="modal-counter">1 / ${images.length}</div>
                     <div class="modal-thumbnail-strip">
                         ${images.map((img, index) => `
                             <img src="${img.imagen}" alt="Imagen ${index + 1}" 
                                  class="modal-thumbnail ${index === 0 ? 'active' : ''}" 
-                                 onclick="propertyController.setModalImage(${index})"
                                  data-index="${index}">
                         `).join('')}
                     </div>
@@ -773,10 +788,80 @@ class PropertyDetailController {
         this.currentImageIndex = 0;
         this.modalCurrentIndex = 0;
         
+        // Clean up existing event listeners to prevent duplicates
+        this.cleanupGalleryListeners();
+        
         // Add click event to main image to open modal
         const mainImage = document.querySelector('.main-image');
         if (mainImage) {
-            mainImage.addEventListener('click', () => this.openModal(0));
+            this.mainImageClickHandler = () => this.openModal(0);
+            mainImage.addEventListener('click', this.mainImageClickHandler);
+        }
+        
+        // Add event listeners for navigation buttons
+        const prevBtn = document.querySelector('.gallery-nav.prev');
+        const nextBtn = document.querySelector('.gallery-nav.next');
+        
+        if (prevBtn) {
+            this.prevBtnClickHandler = (e) => {
+                e.preventDefault();
+                this.changeImage(-1);
+            };
+            prevBtn.addEventListener('click', this.prevBtnClickHandler);
+        }
+        
+        if (nextBtn) {
+            this.nextBtnClickHandler = (e) => {
+                e.preventDefault();
+                this.changeImage(1);
+            };
+            nextBtn.addEventListener('click', this.nextBtnClickHandler);
+        }
+        
+        // Add event listeners for thumbnails
+        const thumbnails = document.querySelectorAll('.thumbnail-item');
+        this.thumbnailClickHandlers = [];
+        thumbnails.forEach((thumbnail) => {
+            const clickHandler = (e) => {
+                e.preventDefault();
+                // Get the correct index from data-index attribute
+                const targetIndex = parseInt(thumbnail.dataset.index);
+                this.setMainImage(targetIndex);
+            };
+            this.thumbnailClickHandlers.push({ element: thumbnail, handler: clickHandler });
+            thumbnail.addEventListener('click', clickHandler);
+        });
+    }
+
+    // Clean up gallery event listeners
+    cleanupGalleryListeners() {
+        // Clean main image listener
+        const mainImage = document.querySelector('.main-image');
+        if (mainImage && this.mainImageClickHandler) {
+            mainImage.removeEventListener('click', this.mainImageClickHandler);
+            this.mainImageClickHandler = null;
+        }
+        
+        // Clean navigation button listeners
+        const prevBtn = document.querySelector('.gallery-nav.prev');
+        const nextBtn = document.querySelector('.gallery-nav.next');
+        
+        if (prevBtn && this.prevBtnClickHandler) {
+            prevBtn.removeEventListener('click', this.prevBtnClickHandler);
+            this.prevBtnClickHandler = null;
+        }
+        
+        if (nextBtn && this.nextBtnClickHandler) {
+            nextBtn.removeEventListener('click', this.nextBtnClickHandler);
+            this.nextBtnClickHandler = null;
+        }
+        
+        // Clean thumbnail listeners
+        if (this.thumbnailClickHandlers) {
+            this.thumbnailClickHandlers.forEach(({ element, handler }) => {
+                element.removeEventListener('click', handler);
+            });
+            this.thumbnailClickHandlers = [];
         }
     }
 
@@ -912,6 +997,19 @@ class PropertyDetailController {
         this.updateMainImage();
     }
 
+    // Calculate new index with circular navigation
+    calculateNewIndex(currentIndex, direction, totalImages) {
+        let newIndex = currentIndex + direction;
+        
+        if (newIndex >= totalImages) {
+            newIndex = 0;
+        } else if (newIndex < 0) {
+            newIndex = totalImages - 1;
+        }
+        
+        return newIndex;
+    }
+
     // Set specific main image with validation
     setMainImage(index) {
         if (!this.images || index < 0 || index >= this.images.length) return;
@@ -969,6 +1067,31 @@ class PropertyDetailController {
         document.body.classList.add('modal-open');
         
         this.updateModalImage();
+        
+        // Add event listeners for modal navigation
+        const modalCloseBtn = modal.querySelector('.modal-close');
+        const modalPrevBtn = modal.querySelector('.modal-nav.prev');
+        const modalNextBtn = modal.querySelector('.modal-nav.next');
+        const modalThumbnails = modal.querySelectorAll('.modal-thumbnail');
+        
+        if (modalCloseBtn) {
+            modalCloseBtn.addEventListener('click', () => this.closeModal());
+        }
+        
+        if (modalPrevBtn) {
+            modalPrevBtn.addEventListener('click', () => this.changeModalImage(-1));
+        }
+        
+        if (modalNextBtn) {
+            modalNextBtn.addEventListener('click', () => this.changeModalImage(1));
+        }
+        
+        modalThumbnails.forEach((thumbnail) => {
+            thumbnail.addEventListener('click', () => {
+                const index = parseInt(thumbnail.dataset.index);
+                this.setModalImage(index);
+            });
+        });
         
         // Add keyboard navigation
         this.handleKeyboard = (e) => {
@@ -1041,6 +1164,9 @@ class PropertyDetailController {
     }
     // Enhanced cleanup method for better memory management
     cleanup() {
+        // Clean up gallery event listeners
+        this.cleanupGalleryListeners();
+        
         // Remove resize event listener
         if (this.handleResize) {
             window.removeEventListener('resize', this.handleResize);
