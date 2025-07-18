@@ -252,10 +252,19 @@ exports.handler = async (event, context) => {
     const encryptedId = queryStringParameters?.id;
     const currentUrl = headers?.host ? `https://${headers.host}${event.path}${event.rawQuery ? '?' + event.rawQuery : ''}` : '';
     
-    console.log(`🔐 Encrypted ID: ${encryptedId}`);
+    console.log(`🔐 Raw Encrypted ID: ${encryptedId}`);
     
-    if (!encryptedId) {
-        console.log('📄 No ID provided, returning default page');
+    // Clean up malformed ID (remove duplicate URLs)
+    let cleanEncryptedId = encryptedId;
+    if (encryptedId && encryptedId.includes('http')) {
+        // Extract only the first part before any URL
+        const parts = encryptedId.split('http');
+        cleanEncryptedId = parts[0];
+        console.log(`🧹 Cleaned encrypted ID: ${cleanEncryptedId}`);
+    }
+    
+    if (!cleanEncryptedId) {
+        console.log('📄 No valid ID provided, returning default page');
         return {
             statusCode: 200,
             headers: {
@@ -269,7 +278,7 @@ exports.handler = async (event, context) => {
     try {
         // Decrypt property ID
         console.log('🔓 Attempting to decrypt property ID...');
-        const propertyId = decryptPropertyId(encryptedId);
+        const propertyId = decryptPropertyId(cleanEncryptedId);
         
         if (!propertyId) {
             throw new Error('Failed to decrypt property ID');

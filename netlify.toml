@@ -16,27 +16,7 @@
   # - VITE_ENCRYPTION_KEY
   # - VITE_ENCRYPTION_SALT
 
-# Main redirect: index.html with id parameter to SSR function
-[[redirects]]
-  from = "/index.html"
-  to = "/.netlify/functions/property-ssr"
-  status = 200
-  force = true
-
-# Root redirect with id parameter to SSR function  
-[[redirects]]
-  from = "/"
-  to = "/.netlify/functions/property-ssr"
-  status = 200
-  force = true
-
-# Optional: Support for /propiedad/ format as well
-[[redirects]]
-  from = "/propiedad/*"
-  to = "/.netlify/functions/property-ssr?id=:splat"
-  status = 200
-
-# Fallback to static files for assets
+# Static assets (high priority)
 [[redirects]]
   from = "/assets/*"
   to = "/assets/:splat"
@@ -52,7 +32,6 @@
   to = "/js/:splat"
   status = 200
 
-# Exclude common static files from SSR
 [[redirects]]
   from = "/favicon.ico"
   to = "/favicon.ico"
@@ -68,6 +47,23 @@
   to = "/sitemap.xml"
   status = 200
 
+# Alternative URL format support
+[[redirects]]
+  from = "/propiedad/*"
+  to = "/.netlify/functions/property-ssr?id=:splat"
+  status = 200
+
+# Main SSR redirects (lower priority)
+[[redirects]]
+  from = "/"
+  to = "/.netlify/functions/property-ssr"
+  status = 200
+
+[[redirects]]
+  from = "/index.html"
+  to = "/.netlify/functions/property-ssr"
+  status = 200
+
 # Final fallback for any other routes
 [[redirects]]
   from = "/*"
@@ -78,7 +74,7 @@
 [[headers]]
   for = "/.netlify/functions/*"
   [headers.values]
-    cache-control = "public, max-age=300"
+    Cache-control = "public, max-age=300"
     x-content-type-options = "nosniff"
     x-prerendered = "netlify-function"
 
