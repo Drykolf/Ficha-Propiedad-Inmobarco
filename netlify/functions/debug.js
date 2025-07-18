@@ -54,6 +54,31 @@ exports.handler = async (event, context) => {
             configured: true,
             baseUrl: process.env.VITE_API_BASE_URL
         };
+        
+        // Test API connectivity
+        try {
+            const testUrl = `${process.env.VITE_API_BASE_URL}/inmuebles/${testId}`;
+            const testResponse = await fetch(testUrl, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${process.env.VITE_API_TOKEN}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            debugInfo.testing.api.connectivity = {
+                url: testUrl,
+                status: testResponse.status,
+                statusText: testResponse.statusText,
+                success: testResponse.ok
+            };
+            
+        } catch (apiError) {
+            debugInfo.testing.api.connectivity = {
+                success: false,
+                error: apiError.message
+            };
+        }
     } else {
         debugInfo.testing.api = {
             configured: false,
