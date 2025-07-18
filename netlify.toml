@@ -53,6 +53,27 @@
   to = "/sitemap.xml"
   status = 200
 
+[[redirects]]
+  from = "/config.json"
+  to = "/config.json"
+  status = 200
+
+[[redirects]]
+  from = "*.json"
+  to = "/:splat.json"
+  status = 200
+
+[[redirects]]
+  from = "*.html"
+  to = "/:splat.html"
+  status = 200
+
+# Test functions
+[[redirects]]
+  from = "/url-test"
+  to = "/.netlify/functions/url-test"
+  status = 200
+
 # Test redirect (temporary)
 [[redirects]]
   from = "/test"
@@ -106,11 +127,7 @@
   to = "/.netlify/functions/property-ssr"
   status = 200
 
-# Final fallback for any other routes
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/property-ssr"
-  status = 200
+# NO catch-all redirect - let static files be served normally
 
 # Cache headers for Netlify Functions
 [[headers]]
