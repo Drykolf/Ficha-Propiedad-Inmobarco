@@ -105,8 +105,6 @@
   from = "/index.html"
   to = "/.netlify/functions/property-ssr"
   status = 200
-  to = "/.netlify/functions/property-ssr"
-  status = 200
 
 # Final fallback for any other routes
 [[redirects]]
