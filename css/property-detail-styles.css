@@ -146,6 +146,8 @@ body {
     overflow: visible;
     box-shadow: var(--shadow);
     background: var(--background-level1);
+    border-left: 3px solid var(--primary-color);
+    border-right: 3px solid var(--primary-color);
 }
 
 .main-image-container {
@@ -707,6 +709,30 @@ body {
     font-weight: 600;
 }
 
+/* Checkbox value styles */
+.checkbox-value {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.checkbox-value.true {
+    background: #e8f5e8;
+    color: #2d5a2d;
+    border: 1px solid #a8d8a8;
+}
+
+.checkbox-value.false {
+    background: #fce8e8;
+    color: #5a2d2d;
+    border: 1px solid #d8a8a8;
+}
+
 /* Property Characteristic Groups */
 .characteristic-group {
     margin-bottom: 2rem;
@@ -912,7 +938,83 @@ h1, h2, h3, h4, h5, h6,
     }
 }
 
+/* Tablet optimizations */
+@media (max-width: 1024px) {
+    .property-layout {
+        gap: 1rem;
+    }
+    
+    .property-info {
+        padding: 1.5rem;
+    }
+    
+    .property-title {
+        font-size: 2rem;
+    }
+    
+    .property-price {
+        font-size: 2.2rem;
+    }
+    
+    /* Header adjustments for tablets */
+    .header-content {
+        gap: 1.5rem;
+    }
+    
+    .header-main-title {
+        font-size: 1.8rem;
+    }
+    
+    .header-subtitle {
+        font-size: 1rem;
+    }
+    
+    .logo-inmobarco {
+        height: 60px;
+    }
+}
+
 @media (max-width: 768px) {
+    /* Header optimizations for mobile */
+    .property-header-with-logo {
+        padding: 1rem 1.5rem;
+        margin-bottom: 20px;
+    }
+    
+    .header-content {
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 1rem;
+    }
+    
+    .logo-section {
+        gap: 1rem;
+        flex: 1;
+    }
+    
+    .logo-inmobarco {
+        height: 50px;
+    }
+    
+    .header-title-section {
+        margin-left: 0;
+    }
+    
+    .header-main-title {
+        font-size: 1.4rem;
+        line-height: 1.3;
+        margin-bottom: 0.2rem;
+    }
+    
+    .header-subtitle {
+        font-size: 0.9rem;
+    }
+    
+    /* Hide company info section on mobile */
+    .company-info {
+        display: none;
+    }
+
     .property-layout {
         padding: 1rem;
         gap: 1rem;
@@ -929,13 +1031,15 @@ h1, h2, h3, h4, h5, h6,
     }
 
     .thumbnail-grid {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         grid-template-rows: 1fr;
         gap: 0.5rem;
     }
 
     .property-title {
         font-size: 1.8rem;
+        line-height: 1.3;
+        margin-bottom: 0.8rem;
     }
 
     .property-price {
@@ -943,6 +1047,28 @@ h1, h2, h3, h4, h5, h6,
         flex-direction: column;
         align-items: flex-start;
         gap: 0.2rem;
+        margin-bottom: 1rem;
+    }
+    
+    .price-label {
+        font-size: 0.9rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .property-location {
+        font-size: 1rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .property-badges {
+        gap: 0.3rem;
+        margin-bottom: 1rem;
+    }
+
+    .property-badge {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.8rem;
+        border-radius: 15px;
     }
 
     .property-info,
@@ -1006,20 +1132,108 @@ h1, h2, h3, h4, h5, h6,
 }
 
 @media (max-width: 480px) {
-    .property-layout {
-        padding: 0.5rem;
+    /* Header optimizations for small mobile */
+    .property-header-with-logo {
+        padding: 0.8rem 1rem;
+        margin-bottom: 15px;
+    }
+    
+    .header-content {
+        gap: 0.8rem;
+    }
+    
+    .logo-section {
+        gap: 0.8rem;
+    }
+    
+    .logo-inmobarco {
+        height: 40px;
+    }
+    
+    .header-main-title {
+        font-size: 1.2rem;
+        line-height: 1.4;
+    }
+    
+    .header-subtitle {
+        font-size: 0.8rem;
+        color: var(--text-color2);
+    }
+    
+    /* Keep company info hidden */
+    .company-info {
+        display: none;
     }
 
-    .property-features {
-        grid-template-columns: 1fr;
+    .container {
+        padding: 10px;
+    }
+
+    .property-layout {
+        padding: 0.5rem;
+        gap: 0.5rem;
+    }
+
+    .property-info {
+        padding: 1rem;
+        margin-bottom: 0.5rem;
     }
 
     .property-title {
-        font-size: 1.5rem;
+        font-size: 1.4rem;
+        line-height: 1.4;
+        margin-bottom: 0.5rem;
     }
 
     .property-price {
-        font-size: 1.8rem;
+        font-size: 1.6rem;
+        margin-bottom: 0.8rem;
+    }
+    
+    .price-label {
+        font-size: 0.8rem;
+    }
+
+    .property-location {
+        font-size: 0.9rem;
+        margin-bottom: 0.6rem;
+    }
+
+    .property-badges {
+        gap: 0.25rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .property-badge {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        border-radius: 12px;
+    }
+
+    .property-features {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        margin: 1rem 0;
+    }
+
+    .feature-item {
+        padding: 0.8rem 0.5rem;
+    }
+
+    .feature-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 0.9rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .feature-value {
+        font-size: 1.2rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .feature-label {
+        font-size: 0.8rem;
     }
 
     .property-info,
@@ -1069,6 +1283,34 @@ h1, h2, h3, h4, h5, h6,
         width: 50px;
         height: 50px;
         margin: 1px;
+    }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 360px) {
+    .property-header-with-logo {
+        padding: 0.6rem 0.8rem;
+    }
+    
+    .header-content {
+        gap: 0.6rem;
+    }
+    
+    .logo-section {
+        gap: 0.6rem;
+    }
+    
+    .logo-inmobarco {
+        height: 35px;
+    }
+    
+    .header-main-title {
+        font-size: 1.1rem;
+        line-height: 1.3;
+    }
+    
+    .header-subtitle {
+        font-size: 0.75rem;
     }
 }
 

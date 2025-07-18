@@ -278,6 +278,22 @@ class PropertyDetailController {
 
         // Initialize map if coordinates are available
         this.initializeMap(property);
+        
+        // Add resize listener to update thumbnails on orientation change
+        this.handleResize = () => {
+            const newContent = this.renderPropertyImages(property);
+            const parser = new DOMParser();
+            const newDoc = parser.parseFromString(newContent, 'text/html');
+            const newGallery = newDoc.querySelector('.property-images');
+            const currentGallery = document.querySelector('.property-images');
+            
+            if (currentGallery && newGallery) {
+                currentGallery.innerHTML = newGallery.innerHTML;
+                this.initializeGallery(property.imagenes || []);
+            }
+        };
+        
+        window.addEventListener('resize', this.handleResize);
     }
 
     // Render modern property images gallery
@@ -296,7 +312,11 @@ class PropertyDetailController {
         }
 
         const mainImage = images[0];
-        const thumbnails = images.slice(1, 3); // Show exactly 2 thumbnails
+        
+        // Detect if mobile to show different number of thumbnails
+        const isMobile = window.innerWidth <= 768;
+        const thumbnailCount = isMobile ? 3 : 2; // 3 for mobile, 2 for desktop/tablet
+        const thumbnails = images.slice(1, thumbnailCount + 1);
 
         return `
             <div class="property-images">
@@ -315,8 +335,8 @@ class PropertyDetailController {
                             ${thumbnails.map((img, index) => `
                                 <div class="thumbnail-item" onclick="propertyController.setMainImage(${index + 1})">
                                     <img src="${img.imagen}" alt="Imagen ${index + 2}" class="thumbnail-image">
-                                    ${index === 1 && images.length > 3 ? `
-                                        <div class="thumbnail-overlay">+${images.length - 3}</div>
+                                    ${index === (thumbnailCount - 1) && images.length > thumbnailCount + 1 ? `
+                                        <div class="thumbnail-overlay">+${images.length - thumbnailCount - 1}</div>
                                     ` : ''}
                                 </div>
                             `).join('')}
@@ -399,7 +419,16 @@ class PropertyDetailController {
             </div>
         `;
     }
-
+    // Helper method to normalize group names and handle capitalization issues
+    normalizeGroupName(groupName) {
+        if (!groupName) return 'Otros';
+        
+        // Convert to lowercase, then apply proper title case
+        return groupName.toLowerCase()
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
     // Render property characteristics section
     renderPropertyCharacteristics(property) {
         if (!property.caracteristicas || property.caracteristicas.length === 0) {
@@ -408,11 +437,23 @@ class PropertyDetailController {
 
         const groupedCharacteristics = {};
         property.caracteristicas.forEach(char => {
-            if (!groupedCharacteristics[char.grupo]) {
-                groupedCharacteristics[char.grupo] = [];
+            // Skip "Datos del Inmueble" group
+            // Normalize group name - convert to title case to handle inconsistent capitalization
+            const normalizedGroup = this.normalizeGroupName(char.grupo);
+            if (normalizedGroup === "Datos Del Inmueble") {
+                return;
             }
-            groupedCharacteristics[char.grupo].push(char);
+
+            if (!groupedCharacteristics[normalizedGroup]) {
+                groupedCharacteristics[normalizedGroup] = [];
+            }
+            groupedCharacteristics[normalizedGroup].push(char);
         });
+
+        // If no characteristics remain after filtering, return empty
+        if (Object.keys(groupedCharacteristics).length === 0) {
+            return '';
+        }
 
         return `
             <div class="property-characteristics">
@@ -424,7 +465,7 @@ class PropertyDetailController {
                             ${caracteristicas.map(char => `
                                 <div class="characteristic-item">
                                     <div class="characteristic-label">${char.descripcion}</div>
-                                    <div class="characteristic-value">${char.valor}</div>
+                                    <div class="characteristic-value">${this.formatCharacteristicValue(char)}</div>
                                 </div>
                             `).join('')}
                         </div>
@@ -432,6 +473,27 @@ class PropertyDetailController {
                 `).join('')}
             </div>
         `;
+    }
+
+    // Format characteristic value based on field type
+    formatCharacteristicValue(characteristic) {
+        // Handle checkbox type fields
+        if (characteristic.tipo_campo === 'checkbox') {
+            const value = characteristic.valor;
+            // Check if value indicates true (1, "1", "true", "sí", "si", "yes")
+            const isTrue = value === '1' || value === 1 || 
+                          (typeof value === 'string' && 
+                           ['true', 'sí', 'si', 'yes', 'verdadero'].includes(value.toLowerCase()));
+            
+            if (isTrue) {
+                return '<span class="checkbox-value true">✅ Sí</span>';
+            } else {
+                return '<span class="checkbox-value false">❌ No</span>';
+            }
+        }
+        
+        // For other field types, return the value as is
+        return characteristic.valor || 'N/A';
     }
 
     // Render property description
@@ -764,6 +826,16 @@ class PropertyDetailController {
         thumbnails.forEach((thumb, index) => {
             thumb.classList.toggle('active', index === this.modalCurrentIndex);
         });
+    }
+    
+    // Cleanup method to remove event listeners
+    cleanup() {
+        if (this.handleResize) {
+            window.removeEventListener('resize', this.handleResize);
+        }
+        if (this.handleKeyboard) {
+            document.removeEventListener('keydown', this.handleKeyboard);
+        }
     }
 }
 
