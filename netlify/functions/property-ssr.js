@@ -237,6 +237,14 @@ exports.handler = async (event, context) => {
     
     console.log(`🚀 Netlify Function called: ${httpMethod} ${event.path}`);
     console.log(`📋 Query params:`, queryStringParameters);
+    console.log(`🌐 Raw URL:`, event.rawUrl);
+    console.log(`📍 Raw Query:`, event.rawQuery);
+    console.log(`🔗 Event details:`, {
+        path: event.path,
+        httpMethod: event.httpMethod,
+        isBase64Encoded: event.isBase64Encoded,
+        headers: event.headers['host']
+    });
     
     // Only handle GET requests
     if (httpMethod !== 'GET') {
