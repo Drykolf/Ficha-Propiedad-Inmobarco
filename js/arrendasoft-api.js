@@ -280,7 +280,7 @@ class PropertyDetailController {
         this.initializeMap(property);
         
         // Add resize listener to update thumbnails on orientation change
-        this.handleResize = () => {
+        this.handleResize = this.debounce(() => {
             const newContent = this.renderPropertyImages(property);
             const parser = new DOMParser();
             const newDoc = parser.parseFromString(newContent, 'text/html');
@@ -291,58 +291,79 @@ class PropertyDetailController {
                 currentGallery.innerHTML = newGallery.innerHTML;
                 this.initializeGallery(property.imagenes || []);
             }
-        };
+        }, 250);
         
-        window.addEventListener('resize', this.handleResize);
+        window.addEventListener('resize', this.handleResize, { passive: true });
     }
 
     // Render modern property images gallery
     renderPropertyImages(property) {
         const images = property.imagenes || [];
         if (images.length === 0) {
-            return `
-                <div class="property-images">
-                    <div class="image-gallery-container">
-                        <div class="main-image-container">
-                            <img src="/assets/images/default-property.jpg" alt="Imagen no disponible" class="main-image">
-                        </div>
-                    </div>
-                </div>
-            `;
+            return this.renderDefaultImageContainer();
         }
 
         const mainImage = images[0];
         
-        // Detect if mobile to show different number of thumbnails
+        // Cache mobile detection and thumbnail count
         const isMobile = window.innerWidth <= 768;
-        const thumbnailCount = isMobile ? 3 : 2; // 3 for mobile, 2 for desktop/tablet
+        const thumbnailCount = isMobile ? 3 : 2;
         const thumbnails = images.slice(1, thumbnailCount + 1);
 
         return `
             <div class="property-images">
                 <div class="image-gallery-container">
+                    ${this.renderMainImageContainer(mainImage, property, images.length)}
+                    ${thumbnails.length > 0 ? this.renderThumbnailGrid(thumbnails, thumbnailCount, images.length) : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    // Render default image container (extracted for reusability)
+    renderDefaultImageContainer() {
+        return `
+            <div class="property-images">
+                <div class="image-gallery-container">
                     <div class="main-image-container">
-                        <img src="${mainImage.imagen}" alt="${property.titulo || 'Propiedad'}" class="main-image" data-index="0">
-                        <div class="image-counter">1 / ${images.length}</div>
-                        ${images.length > 1 ? `
-                            <button class="gallery-nav prev" onclick="propertyController.changeImage(-1)">‹</button>
-                            <button class="gallery-nav next" onclick="propertyController.changeImage(1)">›</button>
+                        <img src="/assets/images/default-property.jpg" alt="Imagen no disponible" class="main-image">
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Render main image container (extracted for better maintainability)
+    renderMainImageContainer(mainImage, property, totalImages) {
+        return `
+            <div class="main-image-container">
+                <img src="${mainImage.imagen}" alt="${property.clase_inmueble + ' en ' + this.property.municipio || 'Inmueble'}" class="main-image" data-index="0" loading="lazy">
+                <div class="image-counter">1 / ${totalImages}</div>
+                ${totalImages > 1 ? this.renderGalleryNavigation() : ''}
+            </div>
+        `;
+    }
+
+    // Render gallery navigation buttons
+    renderGalleryNavigation() {
+        return `
+            <button class="gallery-nav prev" onclick="propertyController.changeImage(-1)" aria-label="Imagen anterior">‹</button>
+            <button class="gallery-nav next" onclick="propertyController.changeImage(1)" aria-label="Imagen siguiente">›</button>
+        `;
+    }
+
+    // Render thumbnail grid (extracted for better maintainability)
+    renderThumbnailGrid(thumbnails, thumbnailCount, totalImages) {
+        return `
+            <div class="thumbnail-grid">
+                ${thumbnails.map((img, index) => `
+                    <div class="thumbnail-item" onclick="propertyController.setMainImage(${index + 1})">
+                        <img src="${img.imagen}" alt="Imagen ${index + 2}" class="thumbnail-image" loading="lazy">
+                        ${index === (thumbnailCount - 1) && totalImages > thumbnailCount + 1 ? `
+                            <div class="thumbnail-overlay">+${totalImages - thumbnailCount - 1}</div>
                         ` : ''}
                     </div>
-                    
-                    ${thumbnails.length > 0 ? `
-                        <div class="thumbnail-grid">
-                            ${thumbnails.map((img, index) => `
-                                <div class="thumbnail-item" onclick="propertyController.setMainImage(${index + 1})">
-                                    <img src="${img.imagen}" alt="Imagen ${index + 2}" class="thumbnail-image">
-                                    ${index === (thumbnailCount - 1) && images.length > thumbnailCount + 1 ? `
-                                        <div class="thumbnail-overlay">+${images.length - thumbnailCount - 1}</div>
-                                    ` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : ''}
-                </div>
+                `).join('')}
             </div>
         `;
     }
@@ -435,11 +456,28 @@ class PropertyDetailController {
             return '';
         }
 
+        const groupedCharacteristics = this.groupCharacteristics(property.caracteristicas);
+        
+        if (Object.keys(groupedCharacteristics).length === 0) {
+            return '';
+        }
+
+        return `
+            <div class="property-characteristics">
+                <h2 class="characteristics-title">Características</h2>
+                ${this.renderCharacteristicGroups(groupedCharacteristics)}
+            </div>
+        `;
+    }
+
+    // Group characteristics by normalized group name
+    groupCharacteristics(caracteristicas) {
         const groupedCharacteristics = {};
-        property.caracteristicas.forEach(char => {
-            // Skip "Datos del Inmueble" group
-            // Normalize group name - convert to title case to handle inconsistent capitalization
+        
+        caracteristicas.forEach(char => {
             const normalizedGroup = this.normalizeGroupName(char.grupo);
+            
+            // Skip "Datos del Inmueble" group
             if (normalizedGroup === "Datos Del Inmueble") {
                 return;
             }
@@ -450,29 +488,29 @@ class PropertyDetailController {
             groupedCharacteristics[normalizedGroup].push(char);
         });
 
-        // If no characteristics remain after filtering, return empty
-        if (Object.keys(groupedCharacteristics).length === 0) {
-            return '';
-        }
+        return groupedCharacteristics;
+    }
 
-        return `
-            <div class="property-characteristics">
-                <h2 class="characteristics-title">Características</h2>
-                ${Object.entries(groupedCharacteristics).map(([grupo, caracteristicas]) => `
-                    <div class="characteristic-group">
-                        <h3 class="group-title">${grupo}</h3>
-                        <div class="characteristics-grid">
-                            ${caracteristicas.map(char => `
-                                <div class="characteristic-item">
-                                    <div class="characteristic-label">${char.descripcion}</div>
-                                    <div class="characteristic-value">${this.formatCharacteristicValue(char)}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `).join('')}
+    // Render characteristic groups
+    renderCharacteristicGroups(groupedCharacteristics) {
+        return Object.entries(groupedCharacteristics).map(([grupo, caracteristicas]) => `
+            <div class="characteristic-group">
+                <h3 class="group-title">${grupo}</h3>
+                <div class="characteristics-grid">
+                    ${this.renderCharacteristicItems(caracteristicas)}
+                </div>
             </div>
-        `;
+        `).join('');
+    }
+
+    // Render individual characteristic items
+    renderCharacteristicItems(caracteristicas) {
+        return caracteristicas.map(char => `
+            <div class="characteristic-item">
+                <div class="characteristic-label">${char.descripcion}</div>
+                <div class="characteristic-value">${this.formatCharacteristicValue(char)}</div>
+            </div>
+        `).join('');
     }
 
     // Format characteristic value based on field type
@@ -623,66 +661,99 @@ class PropertyDetailController {
         }
     }
 
-    // Initialize property map
+    // Initialize property map with lazy loading
     initializeMap(property) {
         const mapContainer = document.getElementById('property-map-container');
         if (!mapContainer) return;
 
+        const coords = this.parseMapCoordinates(mapContainer);
+        if (!coords) return;
+
+        // Add intersection observer for lazy loading
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    this.loadMap(coords, mapContainer, property);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        observer.observe(mapContainer);
+    }
+
+    // Parse coordinates from map container
+    parseMapCoordinates(mapContainer) {
         const lat = parseFloat(mapContainer.dataset.lat);
         const lng = parseFloat(mapContainer.dataset.lng);
         const address = mapContainer.dataset.address;
 
-        if (isNaN(lat) || isNaN(lng)) return;
+        if (isNaN(lat) || isNaN(lng)) return null;
 
-        // Add small random offset for privacy (approximate location)
+        return { lat, lng, address };
+    }
+
+    // Load and initialize the map
+    async loadMap(coords, mapContainer, property) {
+        try {
+            // Show loading indicator
+            mapContainer.innerHTML = '<div class="map-loading">Cargando mapa...</div>';
+
+            await this.loadMapResources();
+            
+            const displayCoords = this.addPrivacyOffset(coords);
+            const map = this.createLeafletMap(mapContainer, displayCoords);
+            this.addMapLayers(map, displayCoords, coords.address, property);
+
+        } catch (error) {
+            console.error('Error loading map:', error);
+            this.showMapError(mapContainer);
+        }
+    }
+
+    // Add privacy offset to coordinates
+    addPrivacyOffset(coords) {
         const offsetRange = 0.003; // ~400 meters max offset
         const latOffset = (Math.random() - 0.5) * offsetRange;
         const lngOffset = (Math.random() - 0.5) * offsetRange;
         
-        const displayLat = lat + latOffset;
-        const displayLng = lng + lngOffset;
+        return {
+            lat: coords.lat + latOffset,
+            lng: coords.lng + lngOffset
+        };
+    }
 
-        // Load Leaflet CSS and JS dynamically
-        this.loadMapResources().then(() => {
-            // Clear loading message
-            mapContainer.innerHTML = '';
-            
-            // Initialize the map with offset coordinates
-            const map = L.map('property-map-container').setView([displayLat, displayLng], 16);
-            
-            // Add OpenStreetMap tiles
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
-            
-           /* 
-            const marker = L.marker([displayLat, displayLng]).addTo(map);
-           marker.bindPopup(`
-                <div class="map-popup">
-                    <strong>${property.clase_inmueble || 'Propiedad'}</strong><br>
-                    <small>${address}</small><br>
-                    <em>${property.tipo_servicio || ''}</em><br>
-                    <small style="color: #888;">📍 Ubicación aproximada</small>
-                </div>
-            `).openPopup();*/
+    // Create Leaflet map instance
+    createLeafletMap(mapContainer, coords) {
+        mapContainer.innerHTML = ''; // Clear loading message
+        return L.map('property-map-container').setView([coords.lat, coords.lng], 16);
+    }
 
-            L.circle([displayLat, displayLng], {
-                color: '#1B99D3',
-                fillColor: '#48BFF7',
-                fillOpacity: 0.2,
-                radius: 200
-            }).addTo(map);
-            
-        }).catch(error => {
-            console.error('Error loading map:', error);
-            mapContainer.innerHTML = `
-                <div class="map-error">
-                    <p>No se pudo cargar el mapa</p>
-                    <small>Ubicación aproximada</small>
-                </div>
-            `;
-        });
+    // Add map layers and markers
+    addMapLayers(map, displayCoords, address, property) {
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Add circle instead of marker for privacy
+        L.circle([displayCoords.lat, displayCoords.lng], {
+            color: '#1B99D3',
+            fillColor: '#48BFF7',
+            fillOpacity: 0.2,
+            radius: 200
+        }).addTo(map);
+    }
+
+    // Show map error message
+    showMapError(mapContainer) {
+        mapContainer.innerHTML = `
+            <div class="map-error">
+                <p>No se pudo cargar el mapa</p>
+                <small>Ubicación aproximada</small>
+            </div>
+        `;
     }
 
     // Load Leaflet map resources dynamically
@@ -714,37 +785,59 @@ class PropertyDetailController {
         });
     }
 
-    // Change main image
+    // Change main image with performance optimization
     changeImage(direction) {
         if (!this.images || this.images.length <= 1) return;
         
-        this.currentImageIndex += direction;
-        if (this.currentImageIndex >= this.images.length) this.currentImageIndex = 0;
-        if (this.currentImageIndex < 0) this.currentImageIndex = this.images.length - 1;
-        
+        this.currentImageIndex = this.calculateNewIndex(this.currentImageIndex, direction, this.images.length);
         this.updateMainImage();
     }
 
-    // Set specific main image
+    // Set specific main image with validation
     setMainImage(index) {
-        if (!this.images || index >= this.images.length) return;
+        if (!this.images || index < 0 || index >= this.images.length) return;
+        
         this.currentImageIndex = index;
         this.updateMainImage();
     }
 
-    // Update main image display
+    // Update main image display with preloading
     updateMainImage() {
         const mainImage = document.querySelector('.main-image');
         const counter = document.querySelector('.image-counter');
         
         if (mainImage && this.images[this.currentImageIndex]) {
-            mainImage.src = this.images[this.currentImageIndex].imagen;
+            const currentImage = this.images[this.currentImageIndex];
+            mainImage.src = currentImage.imagen;
             mainImage.setAttribute('data-index', this.currentImageIndex);
+            
+            // Preload next/previous images for smoother navigation
+            this.preloadAdjacentImages();
         }
         
         if (counter) {
             counter.textContent = `${this.currentImageIndex + 1} / ${this.images.length}`;
         }
+    }
+
+    // Preload adjacent images for better performance
+    preloadAdjacentImages() {
+        const preloadIndexes = [
+            this.calculateNewIndex(this.currentImageIndex, 1, this.images.length),
+            this.calculateNewIndex(this.currentImageIndex, -1, this.images.length)
+        ];
+
+        preloadIndexes.forEach(index => {
+            if (this.images[index] && !this.preloadedImages?.has(index)) {
+                const img = new Image();
+                img.src = this.images[index].imagen;
+                
+                if (!this.preloadedImages) {
+                    this.preloadedImages = new Set();
+                }
+                this.preloadedImages.add(index);
+            }
+        });
     }
 
     // Open modal gallery
@@ -827,15 +920,57 @@ class PropertyDetailController {
             thumb.classList.toggle('active', index === this.modalCurrentIndex);
         });
     }
-    
-    // Cleanup method to remove event listeners
+    // Enhanced cleanup method for better memory management
     cleanup() {
+        // Remove resize event listener
         if (this.handleResize) {
             window.removeEventListener('resize', this.handleResize);
+            this.handleResize = null;
         }
+        
+        // Remove keyboard event listener
         if (this.handleKeyboard) {
             document.removeEventListener('keydown', this.handleKeyboard);
+            this.handleKeyboard = null;
         }
+        
+        // Clear image preloading cache
+        if (this.preloadedImages) {
+            this.preloadedImages.clear();
+            this.preloadedImages = null;
+        }
+        
+        // Remove intersection observers
+        if (this.mapObserver) {
+            this.mapObserver.disconnect();
+            this.mapObserver = null;
+        }
+        
+        // Clear any timeout references
+        if (this.debounceTimeout) {
+            clearTimeout(this.debounceTimeout);
+            this.debounceTimeout = null;
+        }
+        
+        // Reset state
+        this.images = null;
+        this.property = null;
+        this.currentImageIndex = 0;
+        this.modalCurrentIndex = 0;
+    }
+
+    // Enhanced debounce utility with cleanup
+    debounce(func, wait) {
+        return (...args) => {
+            if (this.debounceTimeout) {
+                clearTimeout(this.debounceTimeout);
+            }
+            
+            this.debounceTimeout = setTimeout(() => {
+                this.debounceTimeout = null;
+                func.apply(this, args);
+            }, wait);
+        };
     }
 }
 
@@ -900,7 +1035,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <li>Las claves de encriptación no están definidas</li>
                             <li>El ID en la URL no está encriptado</li>
                         </ul>
-                        <p>Ver <a href="./ENCRIPTACION.md" target="_blank">documentación de encriptación</a> para más información.</p>
                     </div>
                 </div>
             `;

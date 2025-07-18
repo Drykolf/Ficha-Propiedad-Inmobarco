@@ -10,7 +10,7 @@ console.log('🔧 Generating env-vars.js with Netlify environment variables...')
 
 // Obtener variables de entorno
 const envVars = {
-    VITE_API_BASE_URL: process.env.VITE_API_BASE_URL || 'https://inmobarco.arrendasoft.co/service/v2/public',
+    VITE_API_BASE_URL: process.env.VITE_API_BASE_URL || '',
     VITE_API_TOKEN: process.env.VITE_API_TOKEN || '',
     VITE_API_INSTANCE: process.env.VITE_API_INSTANCE || 'inmobarco',
     VITE_COMPANY_NAME: process.env.VITE_COMPANY_NAME || 'Inmobarco',

@@ -1,137 +1,141 @@
-// Property ID Encryption/Decryption Module
-// Simple but effective encryption to obfuscate property IDs in URLs
-
+// Property ID Encryption/Decryption Module - Optimized for performance and security
 class PropertyEncryption {
     constructor() {
         this.key = null;
         this.salt = null;
         this.initialized = false;
+        this.keyWithSalt = null; // Cache for performance
+        this.encryptionPattern = /^[A-Za-z0-9_-]+$/; // Compiled regex for better performance
     }
 
-    // Initialize with configuration from env-config
+    // Initialize with configuration - optimized for performance
     init(encryptionConfig = null) {
         try {
-            // Use provided config or get from environment/fallback
-            if (encryptionConfig) {
-                this.key = encryptionConfig.key;
-                this.salt = encryptionConfig.salt;
-            } else {
-                // Fallback only if encryption config not provided
-                this.key = window.ENV?.VITE_ENCRYPTION_KEY || '';
-                this.salt = window.ENV?.VITE_ENCRYPTION_SALT || '';
+            this.key = encryptionConfig?.key || window.ENV?.VITE_ENCRYPTION_KEY || '';
+            this.salt = encryptionConfig?.salt || window.ENV?.VITE_ENCRYPTION_SALT || '';
+            
+            if (!this._validateKeys()) {
+                return this._initializationFailed();
             }
             
-            // Validate that we have proper encryption keys
-            if (!this.key || !this.salt || this.key === 'TU_CLAVE_DE_ENCRIPTACION_AQUI' || this.salt === 'TU_SALT_AQUI') {
-                console.error('❌ Invalid encryption configuration. Please set proper encryption keys.');
-                this.initialized = false;
-                return false;
-            }
-            
+            // Cache key with salt for performance
+            this.keyWithSalt = this.key + this.salt;
             this.initialized = true;
             return true;
+            
         } catch (error) {
             console.error('❌ Failed to initialize encryption:', error);
-            this.initialized = false;
-            return false;
+            return this._initializationFailed();
         }
     }
 
-    // Simple XOR-based encryption with Base64 encoding
+    _validateKeys() {
+        const invalidKeys = ['TU_CLAVE_DE_ENCRIPTACION_AQUI', 'TU_SALT_AQUI'];
+        return this.key && 
+               this.salt && 
+               !invalidKeys.includes(this.key) && 
+               !invalidKeys.includes(this.salt);
+    }
+
+    _initializationFailed() {
+        console.error('❌ Invalid encryption configuration. Please set proper encryption keys.');
+        this.initialized = false;
+        this.keyWithSalt = null;
+        return false;
+    }
+
+    // Optimized XOR-based encryption with error handling
     encrypt(propertyId) {
-        if (!this.initialized) {
-            console.error('❌ Encryption not initialized. Cannot encrypt property ID.');
-            return null;
-        }
+        if (!this._isInitialized('encrypt')) return null;
 
         try {
             const id = String(propertyId);
-            const keyWithSalt = this.key + this.salt;
-            
-            // XOR encryption
-            let encrypted = '';
-            for (let i = 0; i < id.length; i++) {
-                const keyChar = keyWithSalt.charCodeAt(i % keyWithSalt.length);
-                const idChar = id.charCodeAt(i);
-                encrypted += String.fromCharCode(idChar ^ keyChar);
-            }
-            
-            // Base64 encode and make URL-safe
-            const base64 = btoa(encrypted);
-            const urlSafe = base64
-                .replace(/\+/g, '-')
-                .replace(/\//g, '_')
-                .replace(/=/g, '');
-            
-            return urlSafe;
+            const encrypted = this._xorTransform(id, this.keyWithSalt);
+            return this._encodeToUrlSafe(encrypted);
         } catch (error) {
             console.error('❌ Encryption failed:', error);
             return null;
         }
     }
 
-    // Decrypt the encrypted property ID
+    // Optimized decryption with better error handling
     decrypt(encryptedId) {
-        if (!this.initialized) {
-            console.error('❌ Encryption not initialized. Cannot decrypt property ID.');
-            return null;
-        }
+        if (!this._isInitialized('decrypt') || !encryptedId) return null;
 
         try {
-            if (!encryptedId) return null;
-            
-            // Convert URL-safe Base64 back to normal Base64
-            let base64 = encryptedId
-                .replace(/-/g, '+')
-                .replace(/_/g, '/');
-            
-            // Add padding if needed
-            while (base64.length % 4) {
-                base64 += '=';
-            }
-            
-            // Decode from Base64
-            const encrypted = atob(base64);
-            const keyWithSalt = this.key + this.salt;
-            
-            // XOR decryption
-            let decrypted = '';
-            for (let i = 0; i < encrypted.length; i++) {
-                const keyChar = keyWithSalt.charCodeAt(i % keyWithSalt.length);
-                const encChar = encrypted.charCodeAt(i);
-                decrypted += String.fromCharCode(encChar ^ keyChar);
-            }
-            
-            return decrypted;
+            const encrypted = this._decodeFromUrlSafe(encryptedId);
+            return this._xorTransform(encrypted, this.keyWithSalt);
         } catch (error) {
             console.error('❌ Decryption failed:', error);
             return null;
         }
     }
 
-    // Validate if a string looks like an encrypted ID
-    isEncrypted(value) {
-        if (!value || typeof value !== 'string') {
-            return false;
+    // Optimized XOR transformation (used for both encrypt/decrypt)
+    _xorTransform(input, key) {
+        let result = '';
+        const keyLength = key.length;
+        
+        for (let i = 0; i < input.length; i++) {
+            const keyChar = key.charCodeAt(i % keyLength);
+            const inputChar = input.charCodeAt(i);
+            result += String.fromCharCode(inputChar ^ keyChar);
         }
         
-        // Reject purely numeric strings (like "1815", "123", etc.)
-        if (/^\d+$/.test(value)) {
-            return false;
-        }
-        
-        // Check if it looks like a Base64 URL-safe string
-        const base64UrlPattern = /^[A-Za-z0-9_-]+$/;
-        const matchesPattern = base64UrlPattern.test(value);
-        const hasMinLength = value.length >= 4;
-        
-        // Additional check: encrypted values should have mixed characters
-        const hasMixedChars = /[A-Za-z]/.test(value) && /[0-9_-]/.test(value);
-        
-        return matchesPattern && hasMinLength && hasMixedChars;
+        return result;
     }
 
-    // Generate encrypted URL for a property ID
+    // Encode to URL-safe Base64
+    _encodeToUrlSafe(input) {
+        return btoa(input)
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=/g, '');
+    }
+
+    // Decode from URL-safe Base64
+    _decodeFromUrlSafe(input) {
+        let base64 = input
+            .replace(/-/g, '+')
+            .replace(/_/g, '/');
+        
+        // Add padding if needed
+        const padding = base64.length % 4;
+        if (padding) {
+            base64 += '='.repeat(4 - padding);
+        }
+        
+        return atob(base64);
+    }
+
+    // Helper to check initialization status
+    _isInitialized(operation) {
+        if (!this.initialized) {
+            console.error(`❌ Encryption not initialized. Cannot ${operation} property ID.`);
+            return false;
+        }
+        return true;
+    }
+
+    // Optimized validation for encrypted IDs
+    isEncrypted(value) {
+        if (!value || typeof value !== 'string') return false;
+        
+        // Quick numeric check
+        if (/^\d+$/.test(value)) return false;
+        
+        // Use cached regex pattern
+        return this.encryptionPattern.test(value) && 
+               value.length >= 4 && 
+               this._hasMixedCharacters(value);
+    }
+
+    // Helper to check for mixed characters
+    _hasMixedCharacters(value) {
+        return /[A-Za-z]/.test(value) && /[0-9_-]/.test(value);
+    }
+
+    // Generate encrypted URL with better error handling
     generatePropertyUrl(propertyId, baseUrl = window.location.origin) {
         const encryptedId = this.encrypt(propertyId);
         
@@ -140,6 +144,11 @@ class PropertyEncryption {
             return null;
         }
         
+        return this._buildUrl(baseUrl, encryptedId);
+    }
+
+    // Helper to build URL safely
+    _buildUrl(baseUrl, encryptedId) {
         try {
             const url = new URL(baseUrl);
             url.searchParams.set('id', encryptedId);
@@ -150,29 +159,51 @@ class PropertyEncryption {
         }
     }
 
-    // Extract and decrypt property ID from current URL
+    // Extract and decrypt property ID from current URL - cached for performance
     getPropertyIdFromUrl() {
+        if (this._cachedPropertyId !== undefined) {
+            return this._cachedPropertyId;
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const idParam = urlParams.get('id');
         
         if (!idParam) {
+            this._cachedPropertyId = null;
             return null;
         }
-        
+
         // Only accept encrypted IDs
         if (this.isEncrypted(idParam)) {
             const decryptedId = this.decrypt(idParam);
             if (decryptedId) {
+                this._cachedPropertyId = decryptedId;
                 return decryptedId;
             } else {
                 console.error('❌ Failed to decrypt property ID:', idParam);
+                this._cachedPropertyId = null;
                 return null;
             }
         } else {
             // Reject non-encrypted IDs
             console.error('❌ Property ID must be encrypted. Non-encrypted IDs are not allowed:', idParam);
+            this._cachedPropertyId = null;
             return null;
         }
+    }
+
+    // Clear cached property ID (call when URL changes)
+    clearCache() {
+        this._cachedPropertyId = undefined;
+    }
+
+    // Cleanup method for memory management
+    cleanup() {
+        this.key = null;
+        this.salt = null;
+        this.keyWithSalt = null;
+        this.initialized = false;
+        this._cachedPropertyId = undefined;
     }
 }
 

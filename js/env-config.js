@@ -1,59 +1,112 @@
-// Environment configuration handler - Loads from config.json locally, env vars in production
+// Environment configuration handler - Optimized for performance and error handling
 class EnvConfig {
     constructor() {
         this.config = null;
+        this.isLoading = false;
+        this.loadPromise = null;
     }
 
     async loadConfig() {
-        try {
-            // Check if we have environment variables (Netlify production)
-            const hasEnvVars = window.ENV && 
-                              window.ENV.VITE_API_BASE_URL && 
-                              window.ENV.VITE_API_BASE_URL !== '{{VITE_API_BASE_URL}}' &&
-                              window.ENV.VITE_API_TOKEN && 
-                              window.ENV.VITE_API_TOKEN !== '{{VITE_API_TOKEN}}' &&
-                              window.ENV.VITE_API_TOKEN !== '';
-                              window.ENV.VITE_API_TOKEN !== '{{VITE_API_TOKEN}}' &&
-                              window.ENV.VITE_API_TOKEN !== '';
+        // Prevent multiple simultaneous loads
+        if (this.isLoading && this.loadPromise) {
+            return this.loadPromise;
+        }
 
-            if (hasEnvVars) {
-                this.config = {
-                    api: {
-                        baseUrl: window.ENV.VITE_API_BASE_URL,
-                        token: window.ENV.VITE_API_TOKEN,
-                        instance: window.ENV.VITE_API_INSTANCE || 'inmobarco'
-                    },
-                    company: {
-                        name: window.ENV.VITE_COMPANY_NAME || 'Inmobarco',
-                        phone: window.ENV.VITE_COMPANY_PHONE || '573045258750',
-                        email: window.ENV.VITE_COMPANY_EMAIL || 'comercial@inmobarco.com'
-                    },
-                    encryption: {
-                        key: window.ENV.VITE_ENCRYPTION_KEY,
-                        salt: window.ENV.VITE_ENCRYPTION_SALT
-                    }
-                };
-            } else {
-                try {
-                    // Try to load from config.json for local development
-                    const response = await fetch('./config.json');
-                    if (response.ok) {
-                        const localConfig = await response.json();
-                        this.config = localConfig;
-                    } else {
-                        throw new Error('config.json not found');
-                    }
-                } catch (error) {
-                    console.error('❌ Could not load config.json:', error.message);
-                    throw new Error('Configuration not available. Please check your setup.');
-                }
-            }
-            
+        if (this.config) {
             return this.config;
+        }
+
+        this.isLoading = true;
+        this.loadPromise = this._loadConfigInternal();
+
+        try {
+            this.config = await this.loadPromise;
+            return this.config;
+        } finally {
+            this.isLoading = false;
+            this.loadPromise = null;
+        }
+    }
+
+    async _loadConfigInternal() {
+        try {
+            // Check for environment variables first (production)
+            if (this._hasValidEnvVars()) {
+                return this._createConfigFromEnv();
+            }
+
+            // Fallback to config.json (development)
+            return await this._loadFromConfigFile();
+
         } catch (error) {
             console.error('❌ Error loading configuration:', error);
-            throw error;
+            throw new Error(`Configuration loading failed: ${error.message}`);
         }
+    }
+
+    _hasValidEnvVars() {
+        const env = window.ENV;
+        return env &&
+               this._isValidEnvVar(env.VITE_API_BASE_URL) &&
+               this._isValidEnvVar(env.VITE_API_TOKEN);
+    }
+
+    _isValidEnvVar(value) {
+        return value && 
+               value !== '' && 
+               !value.startsWith('{{') && 
+               !value.endsWith('}}');
+    }
+
+    _createConfigFromEnv() {
+        const env = window.ENV;
+        return {
+            api: {
+                baseUrl: env.VITE_API_BASE_URL,
+                token: env.VITE_API_TOKEN,
+                instance: env.VITE_API_INSTANCE || 'inmobarco'
+            },
+            company: {
+                name: env.VITE_COMPANY_NAME || 'Inmobarco',
+                phone: env.VITE_COMPANY_PHONE || '573045258750',
+                email: env.VITE_COMPANY_EMAIL || 'comercial@inmobarco.com'
+            },
+            encryption: {
+                key: env.VITE_ENCRYPTION_KEY,
+                salt: env.VITE_ENCRYPTION_SALT
+            }
+        };
+    }
+
+    async _loadFromConfigFile() {
+        try {
+            const response = await fetch('./config.json');
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const config = await response.json();
+            
+            if (!this._validateConfig(config)) {
+                throw new Error('Invalid configuration structure');
+            }
+
+            return config;
+
+        } catch (error) {
+            if (error.name === 'SyntaxError') {
+                throw new Error('Invalid JSON in config.json');
+            }
+            throw new Error(`Failed to load config.json: ${error.message}`);
+        }
+    }
+
+    _validateConfig(config) {
+        return config &&
+               config.api &&
+               config.api.baseUrl &&
+               config.api.token;
     }
 
     getApiConfig() {
