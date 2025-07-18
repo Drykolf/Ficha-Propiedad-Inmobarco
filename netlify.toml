@@ -5,26 +5,24 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  # Note: All environment variables must be configured in Netlify's environment variables section
+  # Required variables:
+  # - VITE_API_BASE_URL
+  # - VITE_API_TOKEN  
+  # - VITE_API_INSTANCE
+  # - VITE_COMPANY_NAME
+  # - VITE_COMPANY_PHONE
+  # - VITE_COMPANY_EMAIL
+  # - VITE_ENCRYPTION_KEY
+  # - VITE_ENCRYPTION_SALT
 
-# Test function first - IMPORTANT: This tests if functions work at all
+# Test function first
 [[redirects]]
   from = "/hello"
   to = "/.netlify/functions/hello"
   status = 200
 
-# Direct function access for debugging
-[[redirects]]
-  from = "/debug-direct"
-  to = "/.netlify/functions/debug"
-  status = 200
-
-# Working redirects (these should work)
-[[redirects]]
-  from = "/propiedad/*"
-  to = "/.netlify/functions/property-ssr?id=:splat"
-  status = 200
-
-# Static assets
+# Static assets (high priority)
 [[redirects]]
   from = "/assets/*"
   to = "/assets/:splat"
@@ -40,8 +38,138 @@
   to = "/js/:splat"
   status = 200
 
-# Simple fallback to index.html (no functions for now)
+[[redirects]]
+  from = "/favicon.ico"
+  to = "/favicon.ico"
+  status = 200
+
+[[redirects]]
+  from = "/robots.txt"
+  to = "/robots.txt"
+  status = 200
+
+[[redirects]]
+  from = "/sitemap.xml"
+  to = "/sitemap.xml"
+  status = 200
+
+# Test redirect (temporary)
+[[redirects]]
+  from = "/test"
+  to = "/.netlify/functions/test"
+  status = 200
+
+[[redirects]]
+  from = "/hello"
+  to = "/.netlify/functions/hello"
+  status = 200
+
+[[redirects]]
+  from = "/preview-test"
+  to = "/.netlify/functions/social-preview-test"
+  status = 200
+
+# Alternative URL format support
+[[redirects]]
+  from = "/propiedad/*"
+  to = "/.netlify/functions/property-ssr?id=:splat"
+  status = 200
+
+[[redirects]]
+  from = "/propiedades/*"
+  to = "/.netlify/functions/property-ssr?id=:splat"
+  status = 200
+
+[[redirects]]
+  from = "/property/*"
+  to = "/.netlify/functions/property-ssr?id=:splat"
+  status = 200
+
+[[redirects]]
+  from = "/property/"
+  to = "/.netlify/functions/property-ssr"
+  status = 200
+
+[[redirects]]
+  from = "/propiedades/"
+  to = "/.netlify/functions/property-ssr"
+  status = 200
+
+# Main SSR redirects (lower priority) - preserve query params
+[[redirects]]
+  from = "/"
+  to = "/.netlify/functions/property-ssr"
+  status = 200
+
+[[redirects]]
+  from = "/index.html"
+  to = "/.netlify/functions/property-ssr"
+  status = 200
+  to = "/.netlify/functions/property-ssr"
+  status = 200
+
+# Final fallback for any other routes
 [[redirects]]
   from = "/*"
-  to = "/index.html"
+  to = "/.netlify/functions/property-ssr"
   status = 200
+
+# Cache headers for Netlify Functions
+[[headers]]
+  for = "/.netlify/functions/*"
+  [headers.values]
+    Cache-control = "public, max-age=300"
+    x-content-type-options = "nosniff"
+    x-prerendered = "netlify-function"
+
+# Security and performance headers for all pages
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+[[headers]]
+  for = "*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"
+
+[[headers]]
+  for = "*.json"
+  [headers.values]
+    Cache-Control = "public, max-age=300"
+# HTML files - Sin caché o muy corto (para actualizaciones frecuentes)
+[[headers]]
+  for = "*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=300"
+
+# Imágenes - 1 semana (cambian menos frecuentemente)
+[[headers]]
+  for = "*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "*.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+# Headers específicos para assets del directorio assets/
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=2592000"
+    Access-Control-Allow-Origin = "*"
