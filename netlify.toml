@@ -5,22 +5,6 @@
 
 [build.environment]
   NODE_VERSION = "18"
-  # Note: All environment variables must be configured in Netlify's environment variables section
-  # Required variables:
-  # - VITE_API_BASE_URL
-  # - VITE_API_TOKEN  
-  # - VITE_API_INSTANCE
-  # - VITE_COMPANY_NAME
-  # - VITE_COMPANY_PHONE
-  # - VITE_COMPANY_EMAIL
-  # - VITE_ENCRYPTION_KEY
-  # - VITE_ENCRYPTION_SALT
-
-# Test function first
-[[redirects]]
-  from = "/hello"
-  to = "/.netlify/functions/hello"
-  status = 200
 
 # Static assets (high priority) - must come before catch-all
 [[redirects]]
@@ -53,7 +37,18 @@
   to = "/sitemap.xml"
   status = 200
 
-# SSR redirects - catch everything else including root and query params
+# SSR redirects for root and index - CRITICAL FOR ROOT PATH
+[[redirects]]
+  from = "/"
+  to = "/.netlify/functions/hello"
+  status = 200
+
+[[redirects]]
+  from = "/index.html"
+  to = "/.netlify/functions/hello"
+  status = 200
+
+# SSR redirects - catch everything else
 [[redirects]]
   from = "/*"
   to = "/.netlify/functions/hello"
@@ -90,13 +85,12 @@
   for = "*.json"
   [headers.values]
     Cache-Control = "public, max-age=300"
-# HTML files - Sin caché o muy corto (para actualizaciones frecuentes)
+
 [[headers]]
   for = "*.html"
   [headers.values]
     Cache-Control = "public, max-age=300"
 
-# Imágenes - 1 semana (cambian menos frecuentemente)
 [[headers]]
   for = "*.jpg"
   [headers.values]
@@ -112,7 +106,6 @@
   [headers.values]
     Cache-Control = "public, max-age=604800"
 
-# Headers específicos para assets del directorio assets/
 [[headers]]
   for = "/assets/*"
   [headers.values]
