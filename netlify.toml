@@ -1,6 +1,6 @@
 [build]
   publish = "."
-  command = "echo 'Static site build complete'"
+  command = "echo 'Building Inmobarco Property Template...' && node build-env.js && echo 'Build completed - Static site ready with environment variables'"
   functions = "netlify/functions"
 
 [build.environment]
@@ -51,6 +51,17 @@
 [[redirects]]
   from = "/sitemap.xml"
   to = "/sitemap.xml"
+  status = 200
+
+# Main SSR redirects (lower priority) - preserve query params
+[[redirects]]
+  from = "/"
+  to = "/.netlify/functions/root-debug"
+  status = 200
+
+[[redirects]]
+  from = "/index.html"
+  to = "/.netlify/functions/property-ssr"
   status = 200
 
 # Cache headers for Netlify Functions
