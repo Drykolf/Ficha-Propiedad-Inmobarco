@@ -95,7 +95,7 @@ async function fetchPropertyData(propertyId) {
             return null;
         }
         
-        const apiUrl = `${process.env.VITE_API_BASE_URL}/property/${propertyId}`;
+        const apiUrl = `${process.env.VITE_API_BASE_URL}/properties/${propertyId}`;
         console.log('Making API request to:', apiUrl);
         
         const response = await makeRequest(apiUrl, {
@@ -108,11 +108,22 @@ async function fetchPropertyData(propertyId) {
 
         console.log('API Response:', {
             statusCode: response.statusCode,
-            hasData: !!response.data
+            hasData: !!response.data,
+            dataPreview: response.statusCode !== 200 ? response.data : 'SUCCESS'
         });
 
-        if (response.statusCode === 200) {
-            return response.data;
+        if (response.statusCode === 200 && response.data) {
+            // Map Arrendasoft API response to our format
+            const property = response.data;
+            return {
+                title: property.title || property.name || `Propiedad ${propertyId}`,
+                description: property.description || property.comercialDescription || 'Hermosa propiedad',
+                price: property.price || property.salePrice || property.rentPrice || 'Consultar precio',
+                location: `${property.city || ''} ${property.neighborhood || ''}`.trim() || 'Excelente ubicación',
+                images: property.images && property.images.length > 0 ? 
+                    property.images.map(img => img.url || img.path || img) : 
+                    []
+            };
         }
         
         console.error('API returned non-200 status:', response.statusCode);
