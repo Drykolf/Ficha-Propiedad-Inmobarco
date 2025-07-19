@@ -21,14 +21,7 @@ function makeRequest(url, options = {}) {
         req.end();
     });
 }
-// Format currency
-function formatCurrency(amount) {
-    return new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0
-    }).format(amount);
-}
+
 // Function to decrypt property ID (based on property-encryption.js)
 function decryptPropertyId(encryptedId) {
     try {
@@ -143,25 +136,19 @@ async function fetchPropertyData(propertyId) {
 
 // Generate dynamic HTML with property meta tags
 function generateHTML(property, url) {
-    const getCharacteristicValue = (descripcion) => {
-            if (!property.caracteristicas || !Array.isArray(property.caracteristicas)) return null;
-            const characteristic = property.caracteristicas.find(c => 
-                c.descripcion.toLowerCase().includes(descripcion.toLowerCase())
-            );
-            return characteristic ? characteristic.valor : null;
-        };
     const baseUrl = new URL(url).origin;
     
     const baseTitle = property ? 
-        `🏠 ${property.clase_inmueble + ' en ' + property.municipio || 'Propiedad'} - Inmobarco` : 
+        `🏠 ${property.title || 'Propiedad'} - Inmobarco` : 
         '🏠 Propiedad en Inmobarco';
         
-    const baseFeatures = property ? 
-        `${property.tipo_servicio || 'Encuentra la propiedad perfecta'} | ${formatCurrency(property.valor_arriendo1) || 'Consultar precio'} | ${getCharacteristicValue('Habitaciones') + 'Cuartos'} | ${getCharacteristicValue('Baños') + 'Baños'}` :
+    const baseDescription = property ? 
+        `${property.description || 'Encuentra la propiedad perfecta'} | ${property.price || 'Consultar precio'} | ${property.location || 'Excelente ubicación'}` :
         'Encuentra la propiedad perfecta | Tu hogar ideal te está esperando';
         
-    const imageUrl = property && property.imagenes && property.imagenes.length > 0 ? 
-        property.imagenes[0]['imagen'] : `${baseUrl}/assets/images/Logo.png`;
+    const imageUrl = property && property.images && property.images.length > 0 ? 
+        property.images[0] : 
+        `${baseUrl}/assets/images/Logo.png`;
 
     return `<!DOCTYPE html>
 <html lang="es">
@@ -169,7 +156,7 @@ function generateHTML(property, url) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${baseTitle}</title>
-    <meta name="description" content="${baseFeatures}">
+    <meta name="description" content="${baseDescription}">
     <meta name="keywords" content="inmuebles, propiedades, venta, arriendo, Inmobarco">
     
     <!-- Open Graph / Facebook / WhatsApp -->
@@ -177,7 +164,7 @@ function generateHTML(property, url) {
     <meta property="og:site_name" content="Inmobarco">
     <meta property="og:url" content="${url}">
     <meta property="og:title" content="${baseTitle}">
-    <meta property="og:description" content="${baseFeatures}">
+    <meta property="og:description" content="${baseDescription}">
     <meta property="og:image" content="${imageUrl}">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -189,7 +176,7 @@ function generateHTML(property, url) {
     <meta name="twitter:site" content="@Inmobarco">
     <meta name="twitter:url" content="${url}">
     <meta name="twitter:title" content="${baseTitle}">
-    <meta name="twitter:description" content="${baseFeatures}">
+    <meta name="twitter:description" content="${baseDescription}">
     <meta name="twitter:image" content="${imageUrl}">
     <meta name="twitter:image:alt" content="Vista de propiedad en Inmobarco">
 
@@ -210,7 +197,7 @@ function generateHTML(property, url) {
         "@context": "https://schema.org",
         "@type": "RealEstate",
         "name": "${property ? (property.title || 'Propiedad en Inmobarco').replace(/"/g, '\\"') : 'Propiedad en Inmobarco'}",
-        "description": "${baseFeatures.replace(/"/g, '\\"')}",
+        "description": "${baseDescription.replace(/"/g, '\\"')}",
         "provider": {
             "@type": "RealEstateAgent",
             "name": "Inmobarco",
