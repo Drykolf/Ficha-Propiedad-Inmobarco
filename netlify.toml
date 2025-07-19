@@ -53,17 +53,6 @@
   to = "/sitemap.xml"
   status = 200
 
-# Main SSR redirects (lower priority) - preserve query params
-[[redirects]]
-  from = "/"
-  to = "/.netlify/functions/hello"
-  status = 200
-
-[[redirects]]
-  from = "/index.html"
-  to = "/.netlify/functions/hello"
-  status = 200
-
 # Cache headers for Netlify Functions
 [[headers]]
   for = "/.netlify/functions/*"
