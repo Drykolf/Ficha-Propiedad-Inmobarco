@@ -22,7 +22,7 @@
   to = "/.netlify/functions/hello"
   status = 200
 
-# Static assets (high priority)
+# Static assets (high priority) - must come before catch-all
 [[redirects]]
   from = "/assets/*"
   to = "/assets/:splat"
@@ -53,14 +53,9 @@
   to = "/sitemap.xml"
   status = 200
 
-# Main SSR redirects (lower priority) - preserve query params
+# SSR redirects - catch everything else including root and query params
 [[redirects]]
-  from = "/"
-  to = "/.netlify/functions/hello"
-  status = 200
-
-[[redirects]]
-  from = "/index.html"
+  from = "/*"
   to = "/.netlify/functions/hello"
   status = 200
 
