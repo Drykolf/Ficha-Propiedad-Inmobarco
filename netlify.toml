@@ -37,16 +37,18 @@
   to = "/sitemap.xml"
   status = 200
 
-# SSR redirects for root and index - CRITICAL FOR ROOT PATH
+# SSR redirects for root and index - FORCE OVERRIDE
 [[redirects]]
   from = "/"
   to = "/.netlify/functions/hello"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/index.html"
   to = "/.netlify/functions/hello"
   status = 200
+  force = true
 
 # SSR redirects - catch everything else
 [[redirects]]
