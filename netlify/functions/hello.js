@@ -83,7 +83,21 @@ function decryptPropertyId(encryptedId) {
 // Function to fetch property data from Arrendasoft API
 async function fetchPropertyData(propertyId) {
     try {
+        // Log environment variables (safely)
+        console.log('API Config:', {
+            baseUrl: process.env.VITE_API_BASE_URL ? 'SET' : 'MISSING',
+            token: process.env.VITE_API_TOKEN ? 'SET' : 'MISSING',
+            propertyId: propertyId
+        });
+        
+        if (!process.env.VITE_API_BASE_URL || !process.env.VITE_API_TOKEN) {
+            console.error('Missing required API configuration');
+            return null;
+        }
+        
         const apiUrl = `${process.env.VITE_API_BASE_URL}/property/${propertyId}`;
+        console.log('Making API request to:', apiUrl);
+        
         const response = await makeRequest(apiUrl, {
             method: 'GET',
             headers: {
@@ -92,10 +106,16 @@ async function fetchPropertyData(propertyId) {
             }
         });
 
+        console.log('API Response:', {
+            statusCode: response.statusCode,
+            hasData: !!response.data
+        });
+
         if (response.statusCode === 200) {
             return response.data;
         }
         
+        console.error('API returned non-200 status:', response.statusCode);
         return null;
     } catch (error) {
         console.error('Error fetching property data:', error);
@@ -259,7 +279,15 @@ exports.handler = async (event, context) => {
                     if (propertyData) {
                         console.log('Property data loaded successfully');
                     } else {
-                        console.log('Could not fetch property data, using defaults');
+                        console.log('Could not fetch property data, using mock data for testing');
+                        // Mock data for testing
+                        propertyData = {
+                            title: `Propiedad ${propertyId}`,
+                            description: 'Hermosa propiedad en excelente ubicación',
+                            price: '$350,000,000',
+                            location: 'Bogotá, Colombia',
+                            images: [`https://ficha.inmobarco.com/assets/images/Logo.png`]
+                        };
                     }
                 }
             } catch (decryptError) {
