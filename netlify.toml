@@ -56,12 +56,12 @@
 # Main SSR redirects (lower priority) - preserve query params
 [[redirects]]
   from = "/"
-  to = "/.netlify/functions/root-debug"
+  to = "/.netlify/functions/hello"
   status = 200
 
 [[redirects]]
   from = "/index.html"
-  to = "/.netlify/functions/property-ssr"
+  to = "/.netlify/functions/hello"
   status = 200
 
 # Cache headers for Netlify Functions
