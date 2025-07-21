@@ -274,6 +274,7 @@ class PropertyDetailController {
                 </div>
             </div>
             
+            ${this.renderPropertyCode(property)}
             ${this.renderImageModal(property)}
         `;
 
@@ -511,32 +512,33 @@ class PropertyDetailController {
 
     // Render individual characteristic items
     renderCharacteristicItems(caracteristicas) {
-        return caracteristicas.map(char => `
-            <div class="characteristic-item">
-                <div class="characteristic-label">${char.descripcion}</div>
-                <div class="characteristic-value">${this.formatCharacteristicValue(char)}</div>
-            </div>
-        `).join('');
+        return caracteristicas.map(char => {
+            // Handle checkbox type fields with special formatting
+            if (char.tipo_campo === 'checkbox') {
+                const value = char.valor;
+                // Check if value indicates true (1, "1", "true", "sí", "si", "yes")
+                const isTrue = value === '1' || value === 1 || 
+                              (typeof value === 'string' && 
+                               ['true', 'sí', 'si', 'yes', 'verdadero'].includes(value.toLowerCase()));
+                
+                // Only show checkbox characteristics that are true
+                if (isTrue) {
+                    return `<div class="characteristic-item checkbox-item"><span class="check-icon">✓</span> ${char.descripcion}</div>`;
+                } else {
+                    // Skip false checkbox values
+                    return '';
+                }
+            } else {
+                // Standard format for non-checkbox fields - single line
+                return `<div class="characteristic-item"><span class="characteristic-label">${char.descripcion}:</span> <span class="characteristic-value">${char.valor || 'N/A'}</span></div>`;
+            }
+        }).filter(item => item !== '').join('');
     }
 
     // Format characteristic value based on field type
     formatCharacteristicValue(characteristic) {
-        // Handle checkbox type fields
-        if (characteristic.tipo_campo === 'checkbox') {
-            const value = characteristic.valor;
-            // Check if value indicates true (1, "1", "true", "sí", "si", "yes")
-            const isTrue = value === '1' || value === 1 || 
-                          (typeof value === 'string' && 
-                           ['true', 'sí', 'si', 'yes', 'verdadero'].includes(value.toLowerCase()));
-            
-            if (isTrue) {
-                return '<span class="checkbox-value true">✅ Sí</span>';
-            } else {
-                return '<span class="checkbox-value false">❌ No</span>';
-            }
-        }
-        
-        // For other field types, return the value as is
+        // Checkbox formatting is now handled in renderCharacteristicItems
+        // This method is kept for backward compatibility and other field types
         return characteristic.valor || 'N/A';
     }
 
@@ -596,6 +598,17 @@ class PropertyDetailController {
                         <span>${property.barrio}, ${property.municipio}</span>
                     </div>
                 </div>
+            </div>
+        `;
+    }
+
+    // Render property code section for agents
+    renderPropertyCode(property) {
+        if (!property.codigo) return '';
+
+        return `
+            <div class="property-code-discrete">
+                <span class="code-ref">Ref: ${property.codigo}</span>
             </div>
         `;
     }
