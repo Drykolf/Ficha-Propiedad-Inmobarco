@@ -80,6 +80,15 @@ function decryptPropertyId(encryptedId) {
     }
 }
 
+// Format currency
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        minimumFractionDigits: 0
+    }).format(amount);
+}
+
 // Function to fetch property data from Arrendasoft API
 async function fetchPropertyData(propertyId) {
     try {
@@ -116,12 +125,12 @@ async function fetchPropertyData(propertyId) {
             // Map Arrendasoft API response to our format
             const property = response.data;
             return {
-                title: property.title || property.name || `Propiedad ${propertyId}`,
+                title: property.title || property.name || `Propiedad en ${property.tipo_servicio}`,
                 description: property.description || property.comercialDescription || 'Hermosa propiedad',
-                price: property.price || property.salePrice || property.rentPrice || 'Consultar precio',
-                location: `${property.city || ''} ${property.neighborhood || ''}`.trim() || 'Excelente ubicación',
-                images: property.images && property.images.length > 0 ? 
-                    property.images.map(img => img.url || img.path || img) : 
+                price: formatCurrency(property.valor_arriendo1 || property.valor_venta1) || 'Consultar precio',
+                location: `${property.barrio || ''}, ${property.municipio || ''}`.trim() || 'Excelente ubicación',
+                images: property.imagenes && property.imagenes.length > 0 ? 
+                    property.imagenes.map(img => img.url || img.path || img) : 
                     []
             };
         }
@@ -293,10 +302,10 @@ exports.handler = async (event, context) => {
                         console.log('Could not fetch property data, using mock data for testing');
                         // Mock data for testing
                         propertyData = {
-                            title: `Propiedad ${propertyId}`,
+                            title: `Propiedad en medellin`,
                             description: 'Hermosa propiedad en excelente ubicación',
-                            price: '$350,000,000',
-                            location: 'Bogotá, Colombia',
+                            price: '$3,500,000',
+                            location: 'Medellin, Colombia',
                             images: [`https://ficha.inmobarco.com/assets/images/Logo.png`]
                         };
                     }
