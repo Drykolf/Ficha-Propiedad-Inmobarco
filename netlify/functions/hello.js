@@ -106,13 +106,6 @@ async function fetchPropertyData(propertyId) {
         
         const apiUrl = `${process.env.VITE_API_BASE_URL}/properties/${propertyId}`;
         console.log('Making API request to:', apiUrl);
-        const getCharacteristicValue = (descripcion) => {
-            if (!property.caracteristicas || !Array.isArray(property.caracteristicas)) return null;
-            const characteristic = property.caracteristicas.find(c => 
-                c.descripcion.toLowerCase().includes(descripcion.toLowerCase())
-            );
-            return characteristic ? characteristic.valor : null;
-        };
         const response = await makeRequest(apiUrl, {
             method: 'GET',
             headers: {
@@ -130,13 +123,20 @@ async function fetchPropertyData(propertyId) {
         if (response.statusCode === 200 && response.data) {
             // Map Arrendasoft API response to our format
             const property = response.data;
+            const getCharacteristicValue = (descripcion) => {
+                if (!property.caracteristicas || !Array.isArray(property.caracteristicas)) return null;
+                const characteristic = property.caracteristicas.find(c => 
+                    c.descripcion.toLowerCase().includes(descripcion.toLowerCase())
+                );
+                return characteristic ? characteristic.valor : null;
+            };
             return {
                 title: property.title || property.name || `Propiedad en ${property.tipo_servicio}`,
                 description: `${getCharacteristicValue('Habitaciones') + ' Cuartos' || ''} | ${getCharacteristicValue('Baños') + ' Baños' || ''}`.trim()||'Hermosa propiedad',
                 price: formatCurrency(property.valor_arriendo1 || property.valor_venta1) || 'Consultar precio',
                 location: `${property.barrio || ''}, ${property.municipio || ''}`.trim() || 'Excelente ubicación',
                 images: property.imagenes && property.imagenes.length > 0 ? 
-                    property.imagenes.map(img => img.url || img.path || img) : 
+                    property.imagenes.map(img => img.imagen|| img.path || img) : 
                     []
             };
         }
@@ -310,7 +310,7 @@ exports.handler = async (event, context) => {
                         propertyData = {
                             title: `Propiedad en medellin`,
                             description: 'Hermosa propiedad en excelente ubicación',
-                            price: '$3,500,000',
+                            price: 'Consultar Precio',
                             location: 'Medellin, Colombia',
                             images: [`https://ficha.inmobarco.com/assets/images/Logo.png`]
                         };
