@@ -204,7 +204,8 @@ function generateHTML(property, url) {
     <link rel="stylesheet" href="${baseUrl}/css/preview-generator.css">
     
     <!-- Preload critical resources -->
-    <link rel="preload" href="${baseUrl}/js/arrendasoft-api.js" as="script">
+    <link rel="preload" href="${baseUrl}/js/api/arrendasoft-api.js" as="script">
+    <link rel="preload" href="${baseUrl}/js/api/wasi-api.js" as="script">
     
     <!-- Structured Data -->
     <script type="application/ld+json" id="property-schema">
@@ -260,7 +261,9 @@ function generateHTML(property, url) {
     <script src="${baseUrl}/js/env-vars.js"></script>
     <script src="${baseUrl}/js/env-config.js"></script>
     <script src="${baseUrl}/js/property-encryption.js"></script>
-    <script src="${baseUrl}/js/arrendasoft-api.js"></script>
+    <script src="${baseUrl}/js/api/arrendasoft-api.js"></script>
+    <script src="${baseUrl}/js/api/wasi-api.js"></script>
+    <script type="module" src="${baseUrl}/js/property-detail.js"></script>
 </body>
 </html>`;
 }
