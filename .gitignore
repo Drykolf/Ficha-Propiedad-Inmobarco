@@ -60,3 +60,6 @@ js/env-vars.js
 # Debug and temporary files
 /generador-urls.html
 /IMPLEMENTATION-SUMMARY.md
+/backup
+/arrendasoft.html
+/wasi.html

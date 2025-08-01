@@ -17,7 +17,10 @@ const envVars = {
     VITE_COMPANY_PHONE: process.env.VITE_COMPANY_PHONE || '573045258750',
     VITE_COMPANY_EMAIL: process.env.VITE_COMPANY_EMAIL || 'comercial@inmobarco.com',
     VITE_ENCRYPTION_KEY: process.env.VITE_ENCRYPTION_KEY || '',
-    VITE_ENCRYPTION_SALT: process.env.VITE_ENCRYPTION_SALT || ''
+    VITE_ENCRYPTION_SALT: process.env.VITE_ENCRYPTION_SALT || '',
+    WASI_API_TOKEN: process.env.WASI_API_TOKEN || '',
+    WASI_API_ID: process.env.WASI_API_ID || '',
+    WASI_API_URL: process.env.WASI_API_URL || ''
 };
 
 // Verificar variables críticas

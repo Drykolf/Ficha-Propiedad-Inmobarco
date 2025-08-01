@@ -94,37 +94,19 @@ class ArrendasoftAPI {
 }
 
 // Property Detail Page Controller
-class PropertyDetailController {
-    constructor(apiConfig) {
+class NubyPropertyDetailController {
+    constructor(apiConfig, propertyId=null) {
         this.api = new ArrendasoftAPI(apiConfig);
-        this.propertyId = this.getPropertyIdFromUrl();
         this.property = null;
         this.agent = null;
+        this.propertyId = propertyId;
     }
 
-    // Extract property ID from URL
-    getPropertyIdFromUrl() {
-        // ONLY use the encryption module - no fallbacks
-        if (!window.propertyEncryption) {
-            console.error('❌ Property encryption module not available. Cannot process property ID.');
-            return null;
-        }
-
-        if (!window.propertyEncryption.initialized) {
-            console.error('❌ Property encryption module not initialized.');
-            return null;
-        }
-
-        const propertyId = window.propertyEncryption.getPropertyIdFromUrl();
-        
-        if (!propertyId) {
-            console.error('❌ Failed to get encrypted property ID from URL');
-            return null;
-        }
-
-        return propertyId;
+    // Initialize the controller
+    async init() {
+        logger.info('🔍 Loading property data for ID:', this.propertyId);
+        await this.loadProperty();
     }
-
     // Load property data
     async loadProperty() {
         try {
@@ -143,7 +125,6 @@ class PropertyDetailController {
                 this.updatePageMeta();
                 return;
             }
-
             if (!this.propertyId) {
                 throw new Error('Property ID not found in URL. Make sure the URL contains an encrypted ID parameter.');
             }
@@ -535,13 +516,6 @@ class PropertyDetailController {
         }).filter(item => item !== '').join('');
     }
 
-    // Format characteristic value based on field type
-    formatCharacteristicValue(characteristic) {
-        // Checkbox formatting is now handled in renderCharacteristicItems
-        // This method is kept for backward compatibility and other field types
-        return characteristic.valor || 'N/A';
-    }
-
     // Render property description
     renderPropertyDescription(property) {
         const description = property.observaciones || property.descripcion;
@@ -788,11 +762,6 @@ class PropertyDetailController {
         if (script) {
             script.textContent = JSON.stringify(cleanData, null, 2);
         }
-    }
-
-    // Initialize the controller
-    async init() {
-        await this.loadProperty();
     }
 
     // Initialize gallery functionality
@@ -1232,79 +1201,6 @@ class PropertyDetailController {
     }
 }
 
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        // Load configuration first
-        const envConfig = new EnvConfig();
-        const config = await envConfig.loadConfig();
-        
-        if (!config) {
-            throw new Error('Failed to load configuration');
-        }
-
-        // Initialize encryption module with config
-        if (window.propertyEncryption) {
-            const encryptionSuccess = window.propertyEncryption.init(config.encryption);
-            if (!encryptionSuccess) {
-                throw new Error('Failed to initialize encryption module');
-            }
-        } else {
-            throw new Error('Property encryption module not available');
-        }
-
-        // Set up API configuration
-        let apiConfig;
-        if (typeof SecureAPIConfig !== 'undefined') {
-            const secureConfig = new SecureAPIConfig();
-            apiConfig = {
-                baseUrl: secureConfig.getAPIUrl(),
-                token: secureConfig.getAuthToken(),
-                instance: secureConfig.getInstance()
-            };
-        } else {
-            // Use configuration from loaded config
-            apiConfig = config.api;
-        }
-
-        // Create global controller instance with loaded configuration
-        window.propertyController = new PropertyDetailController(apiConfig);
-        
-        // Store company configuration globally for contact methods
-        window.companyConfig = config.company;
-
-        // Initialize the property detail page
-        await window.propertyController.init();
-
-    } catch (error) {
-        console.error('❌ Failed to initialize application:', error);
-        
-        // Show error to user
-        const errorEl = document.getElementById('error');
-        if (errorEl) {
-            errorEl.innerHTML = `
-                <div class="error-container">
-                    <h2>Error de Configuración</h2>
-                    <p>${error.message}</p>
-                    <div class="error-details">
-                        <p>Posibles causas:</p>
-                        <ul>
-                            <li>El archivo config.json no está configurado correctamente</li>
-                            <li>Las claves de encriptación no están definidas</li>
-                            <li>El ID en la URL no está encriptado</li>
-                        </ul>
-                    </div>
-                </div>
-            `;
-            errorEl.style.display = 'block';
-        }
-        
-        // Hide loading
-        const loadingEl = document.getElementById('loading');
-        if (loadingEl) loadingEl.style.display = 'none';
-    }
-});
-
 // Debug helpers for social media previews (development only)
 if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     window.socialDebug = {
@@ -1371,7 +1267,10 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
     console.log('  - socialDebug.getTwitterValidatorUrl() // URL para validador de Twitter');
 }
 
-// Export for module usage
+// Export for ES6 modules
+export { ArrendasoftAPI, NubyPropertyDetailController };
+
+// Export for CommonJS (backward compatibility)
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { ArrendasoftAPI, PropertyDetailController };
+    module.exports = { ArrendasoftAPI, NubyPropertyDetailController };
 }

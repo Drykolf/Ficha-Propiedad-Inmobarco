@@ -66,6 +66,11 @@ class EnvConfig {
                 token: env.VITE_API_TOKEN,
                 instance: env.VITE_API_INSTANCE || 'inmobarco'
             },
+            wasi: {
+                apiUrl: env.WASI_API_URL || 'https://api.wasi.co/v1',
+                apiToken: env.WASI_API_TOKEN,
+                apiId: env.WASI_API_ID
+            },
             company: {
                 name: env.VITE_COMPANY_NAME || 'Inmobarco',
                 phone: env.VITE_COMPANY_PHONE || '573045258750',
@@ -111,6 +116,10 @@ class EnvConfig {
 
     getApiConfig() {
         return this.config?.api || null;
+    }
+
+    getWasiConfig() {
+        return this.config?.wasi || null;
     }
 
     getCompanyConfig() {

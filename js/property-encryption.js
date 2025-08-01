@@ -132,7 +132,7 @@ class PropertyEncryption {
 
     // Helper to check for mixed characters
     _hasMixedCharacters(value) {
-        return /[A-Za-z]/.test(value) && /[0-9_-]/.test(value);
+        return /[A-Za-z]/.test(value) && /[0-9_-]/.test(value) || /[A-Za-z]/.test(value);
     }
 
     // Generate encrypted URL with better error handling

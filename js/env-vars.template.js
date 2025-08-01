@@ -12,7 +12,10 @@
         VITE_COMPANY_PHONE: '{{VITE_COMPANY_PHONE}}',
         VITE_COMPANY_EMAIL: '{{VITE_COMPANY_EMAIL}}',
         VITE_ENCRYPTION_KEY: '{{VITE_ENCRYPTION_KEY}}',
-        VITE_ENCRYPTION_SALT: '{{VITE_ENCRYPTION_SALT}}'
+        VITE_ENCRYPTION_SALT: '{{VITE_ENCRYPTION_SALT}}',
+        WASI_API_TOKEN: '{{WASI_API_TOKEN}}',
+        WASI_API_ID: '{{WASI_API_ID}}',
+        WASI_API_URL: '{{WASI_API_URL}}'
     };
 
     console.log('Environment variables template loaded - will be replaced during build');
