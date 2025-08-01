@@ -6,38 +6,10 @@
 [build.environment]
   NODE_VERSION = "18"
 
-# Static assets (high priority) - must come before catch-all
-[[redirects]]
-  from = "/assets/*"
-  to = "/assets/:splat"
-  status = 200
+# Static assets - serve files directly (NO redirects to functions)
+# These rules must come BEFORE the catch-all redirect
 
-[[redirects]]
-  from = "/css/*"
-  to = "/css/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/js/*"
-  to = "/js/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/favicon.ico"
-  to = "/favicon.ico"
-  status = 200
-
-[[redirects]]
-  from = "/robots.txt"
-  to = "/robots.txt"
-  status = 200
-
-[[redirects]]
-  from = "/sitemap.xml"
-  to = "/sitemap.xml"
-  status = 200
-
-# SSR redirects for root and index - FORCE OVERRIDE
+# SSR redirects ONLY for HTML pages
 [[redirects]]
   from = "/"
   to = "/.netlify/functions/hello"
@@ -50,11 +22,12 @@
   status = 200
   force = true
 
-# SSR redirects - catch everything else
+# Catch-all for HTML pages ONLY (exclude static assets)
 [[redirects]]
   from = "/*"
   to = "/.netlify/functions/hello"
   status = 200
+  conditions = {path = "!/*.*"}
 
 # Cache headers for Netlify Functions
 [[headers]]
@@ -77,11 +50,13 @@
   for = "*.js"
   [headers.values]
     Cache-Control = "public, max-age=86400"
+    Content-Type = "application/javascript; charset=utf-8"
 
 [[headers]]
   for = "*.css"
   [headers.values]
     Cache-Control = "public, max-age=86400"
+    Content-Type = "text/css; charset=utf-8"
 
 [[headers]]
   for = "*.json"
