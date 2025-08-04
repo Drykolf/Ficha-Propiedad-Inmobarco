@@ -261,8 +261,6 @@ function generateHTML(property, url) {
     <script src="${baseUrl}/js/env-vars.js"></script>
     <script src="${baseUrl}/js/env-config.js"></script>
     <script src="${baseUrl}/js/property-encryption.js"></script>
-    <script src="${baseUrl}/js/api/arrendasoft-api.js"></script>
-    <script src="${baseUrl}/js/api/wasi-api.js"></script>
     <script type="module" src="${baseUrl}/js/property-detail.js"></script>
 </body>
 </html>`;

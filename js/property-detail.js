@@ -15,7 +15,7 @@ function initEncryption(config) {
     } else {
         throw new Error('Property encryption module not available');
     }
-    logger.info('✅ Encryption module initialized successfully');
+    logger.debug('✅ Encryption module initialized successfully');
 }
 
 function getPropertyIdFromUrl() {
@@ -43,7 +43,7 @@ function getPropertyId(){
 
     if (urlPropertyId) {
         propertyId = urlPropertyId;
-        logger.info('✅ Property ID obtenido de URL (desencriptado):', propertyId);
+        logger.debug('✅ Property ID obtenido de URL (desencriptado):', propertyId);
     }
     else {
         throw new Error('❌ No se pudo obtener el ID de propiedad');
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!config) {
             throw new Error('Failed to load configuration');
         }
-        logger.info('✅ Configuration loaded successfully');
+        logger.debug('✅ Configuration loaded successfully');
         // Initialize encryption
         initEncryption(config);
         const propertyId = getPropertyId();
@@ -84,11 +84,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.companyConfig = config.company;
         let apiModule;
         if (propertyId < 2000) {
-            logger.info('✅ Using ArrendaSoft API for property ID:', propertyId);
+            logger.debug('✅ Using ArrendaSoft API for property ID:', propertyId);
             apiModule = new NubyPropertyDetailController(config.api,propertyId);
             await apiModule.init();
         } else {
-            logger.warn('✅ Using WASI API for property ID:', propertyId);
+            logger.debug('✅ Using WASI API for property ID:', propertyId);
             apiModule = new WasiPropertyDetailController(config.wasi,propertyId);
             await apiModule.init();
         }

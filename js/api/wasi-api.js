@@ -1,3 +1,4 @@
+import { propertyTypes } from '../../data/wasi_data.js';
 // Create a global logger instance for WASI API
 const logger = new Logger();
 
@@ -128,10 +129,10 @@ class WasiAPI {
         for (let i = 0; i < methods.length; i++) {
             try {
                 const { url, type, options } = methods[i]();
-                logger.info(`🔄 Intentando método ${i + 1} (${type}):`, url);
+                logger.debug(`🔄 Intentando método ${i + 1} (${type}):`, url);
                 
                 const response = await fetch(url, options);
-                logger.info(`✅ Respuesta método ${type}:`, response.status, response.statusText);
+                logger.debug(`✅ Respuesta método ${type}:`, response.status, response.statusText);
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
@@ -139,7 +140,7 @@ class WasiAPI {
                 }
 
                 const data = await response.json();
-                logger.info('✅ Datos recibidos exitosamente:');
+                logger.info('✅ Datos recibidos exitosamente');
                 return data;
                 
             } catch (error) {
@@ -199,50 +200,9 @@ class WasiPropertyDetailController {
         this.propertyData = null;
     }
     
-    async initialize() {
-        logger.info('🔍 Loading property data for ID:', this.propertyId);
-        try {
-            // Inicializar sistema de encriptación
-            const encryptionConfig = window.envConfig.getEncryptionConfig();
-            if (!window.propertyEncryption.init(encryptionConfig)) {
-                logger.warn('⚠️ Sistema de encriptación no inicializado correctamente');
-            }
-            // Obtener propertyId: primero de URL, luego usar valor por defecto
-            let propertyId = null;
-            
-            // Intentar obtener ID de la URL (encriptada)
-            const urlPropertyId = window.propertyEncryption.getPropertyIdFromUrl();
-            if (urlPropertyId) {
-                propertyId = urlPropertyId;
-                logger.info('✅ Property ID obtenido de URL (desencriptado):', propertyId);
-            } else {
-                // Usar ID de ejemplo y desencriptarla
-                const encryptedId = 'SRViXEpzdQ'; // ID encriptada de propiedad de ejemplo
-                propertyId = window.propertyEncryption.decrypt(encryptedId);
-                
-                if (!propertyId) {
-                    // Fallback: usar ID directa (solo para desarrollo)
-                    propertyId = '9352212';
-                    logger.warn('⚠️ No se pudo desencriptar ID, usando fallback:', propertyId);
-                } else {
-                    logger.info('✅ Property ID desencriptado:', propertyId);
-                }
-            }
-            this.showLoading();
-            this.wasiApi.propertyId = propertyId;
-            this.propertyData = await this.wasiApi.getProperty();
-            await this.renderProperty();
-            this.hideLoading();
-            this.updateMetaTags();
-        } catch (error) {
-            this.hideLoading();
-            this.showError(error.message);
-            logger.error('Error inicializando controlador:', error);
-        }
-    }
     // Initialize the controller
     async init() {
-        logger.info('🔍 Loading property data for ID:', this.propertyId);
+        logger.debug('🔍 Loading property data for ID:', this.propertyId);
         await this.loadProperty();
     }
 
@@ -255,7 +215,7 @@ class WasiPropertyDetailController {
                 this.property = window.PRELOADED_PROPERTY;
                 
                 // Validate preloaded property status
-                if (!this.property.estado_texto || this.property.estado_texto.toLowerCase() !== 'activa') {
+                if (parseInt(this.property.id_availability) !== 1 && ![1, 3].includes(parseInt(this.property.id_status_on_page))) {
                     logger.warn(`🚫 Preloaded property is not active. Status: ${this.property.estado_texto || 'Unknown'}`);
                     throw new Error('Property is not active or available');
                 }
@@ -311,33 +271,44 @@ class WasiPropertyDetailController {
 
         const html = `
             <div class="property-layout">
-                ${this.renderPropertyImages(property)}
-                
-                <div class="property-main">
-                    <div class="property-content">
-                        <div class="property-info">
-                            <h1 class="property-title">${property.clase_inmueble + ' en ' + property.municipio|| 'Propiedad'}</h1>
-                            
-                            <div class="property-price">
-                                <span class="price-label">${property.tipo_servicio || 'Precio'}</span>
-                                ${this.formatCurrency(property.valor_arriendo1 || property.valor_venta1 || 0)}
-                            </div>
-                            
-                            <div class="property-badges">
-                                <span class="property-badge type">${property.clase_inmueble || 'Inmueble'}</span>
-                                <span class="property-badge primary">${property.tipo_servicio || 'Disponible'}</span>
-                                ${property.estrato_texto ? `<span class="property-badge">Estrato ${property.estrato_texto}</span>` : ''}
-                            </div>
-
-                            ${this.renderPropertyFeatures(property)}
-                        </div>
-                        
-                        ${this.renderPropertyDescription(property)}
-                        ${this.renderPropertyCharacteristics(property)}
-                        ${this.renderPropertyMap(property)}
-
+            ${this.renderPropertyImages(property)}
+            
+            <div class="property-main">
+                <div class="property-content">
+                <div class="property-info">
+                    <h1 class="property-title">${property.title || 'Propiedad'}</h1>
+                    ${property.for_rent === "true" ? `
+                    <div class="property-price">
+                        <span class="price-label">${'Precio Arriendo'}</span>
+                        ${property.rent_price_label}
                     </div>
+                    ` : ''}
+                    ${property.for_sale === "true" ? `
+                    <div class="property-price">
+                        <span class="price-label">${'Precio Venta'}</span>
+                        ${property.sale_price_label}
+                    </div>
+                    ` : ''}                    
+                    <div class="property-badges">
+                    <span class="property-badge type">${this.getPropertyTypeLabel(property.id_property_type) || 'Inmueble'}</span>
+                     ${property.for_rent === "true" ? `
+                    <span class="property-badge primary">Arriendo</span>
+                    ` : ''}
+                    ${property.for_sale === "true" ? `
+                    <span class="property-badge primary">Venta</span>
+                    ` : ''}
+                    ${property.stratum ? `<span class="property-badge">Estrato ${property.stratum}</span>` : ''}
+                    </div>
+
+                    ${this.renderPropertyFeatures(property)}
                 </div>
+                
+                ${this.renderPropertyDescription(property)}
+                ${this.renderPropertyCharacteristics(property)}
+                ${this.renderPropertyMap(property)}
+
+                </div>
+            </div>
             </div>
             
             ${this.renderPropertyCode(property)}
@@ -347,8 +318,9 @@ class WasiPropertyDetailController {
         contentEl.innerHTML = html;
         contentEl.style.display = 'block';
         
-        // Initialize gallery functionality
-        this.initializeGallery(property.imagenes || []);
+        // Extract images from galleries and initialize gallery functionality
+        const images = this.extractImagesFromGalleries(property.galleries || []);
+        this.initializeGallery(images);
 
         // Initialize map if coordinates are available
         this.initializeMap(property);
@@ -363,15 +335,26 @@ class WasiPropertyDetailController {
             
             if (currentGallery && newGallery) {
                 currentGallery.innerHTML = newGallery.innerHTML;
-                this.initializeGallery(property.imagenes || []);
+                // Re-extract images and reinitialize gallery
+                const images = this.extractImagesFromGalleries(property.galleries || []);
+                this.initializeGallery(images);
             }
         }, 250);
         
         window.addEventListener('resize', this.handleResize, { passive: true });
     }
+
+    getPropertyTypeLabel(idPropertyType) {
+    // Convertir el ID a string para hacer la búsqueda
+    const typeId = String(idPropertyType);
+    // Usar el objeto importado
+    return propertyTypes[typeId] || null;
+}
     // Render modern property images gallery
     renderPropertyImages(property) {
-        const images = property.imagenes || [];
+        // Convert WASI galleries structure to a flat array
+        const images = this.extractImagesFromGalleries(property.galleries || []);
+        
         if (images.length === 0) {
             return this.renderDefaultImageContainer();
         }
@@ -392,7 +375,37 @@ class WasiPropertyDetailController {
             </div>
         `;
     }
-    // Render default image container (extracted for reusability)
+
+    // Extract and normalize images from WASI galleries structure
+    extractImagesFromGalleries(galleries) {
+        const images = [];
+        
+        galleries.forEach(gallery => {
+            // Each gallery contains numbered objects (0, 1, 2, etc.)
+            Object.keys(gallery).forEach(key => {
+                // Skip the 'id' key, only process numbered keys
+                if (key !== 'id' && !isNaN(key)) {
+                    const imageData = gallery[key];
+                    
+                    // Convert WASI format to our expected format
+                    images.push({
+                        id: imageData.id,
+                        imagen: imageData.url_big || imageData.url, // Use url_big for better quality
+                        url_original: imageData.url_original,
+                        url_thumbnail: imageData.url, // Regular url for thumbnails
+                        description: imageData.description || '',
+                        filename: imageData.filename || '',
+                        position: imageData.position || parseInt(key) + 1
+                    });
+                }
+            });
+        });
+        
+        // Sort by position to maintain correct order
+        return images.sort((a, b) => a.position - b.position);
+    }
+
+// Render default image container (extracted for reusability)
     renderDefaultImageContainer() {
         return `
             <div class="property-images">
@@ -421,13 +434,16 @@ class WasiPropertyDetailController {
             <button class="gallery-nav next" aria-label="Imagen siguiente">›</button>
         `;
     }
-    // Render thumbnail grid (extracted for better maintainability)
+    // Render thumbnail grid (updated for WASI structure)
     renderThumbnailGrid(thumbnails, thumbnailCount, totalImages) {
         return `
             <div class="thumbnail-grid">
                 ${thumbnails.map((img, index) => `
                     <div class="thumbnail-item" data-index="${index + 1}">
-                        <img src="${img.imagen}" alt="Imagen ${index + 2}" class="thumbnail-image" loading="lazy">
+                        <img src="${img.url_thumbnail || img.imagen}" 
+                             alt="Imagen ${index + 2}" 
+                             class="thumbnail-image" 
+                             loading="lazy">
                         ${index === (thumbnailCount - 1) && totalImages > thumbnailCount + 1 ? `
                             <div class="thumbnail-overlay">+${totalImages - thumbnailCount - 1}</div>
                         ` : ''}
@@ -438,7 +454,7 @@ class WasiPropertyDetailController {
     }
     // Render image modal for full screen viewing
     renderImageModal(property) {
-        const images = property.imagenes || [];
+        const images = this.extractImagesFromGalleries(property.galleries || []);
         if (images.length === 0) return '';
 
         return `
@@ -451,7 +467,8 @@ class WasiPropertyDetailController {
                     <div class="modal-counter" id="modal-counter">1 / ${images.length}</div>
                     <div class="modal-thumbnail-strip">
                         ${images.map((img, index) => `
-                            <img src="${img.imagen}" alt="Imagen ${index + 1}" 
+                            <img src="${img.url_thumbnail || img.imagen}" 
+                                 alt="Imagen ${index + 1}" 
                                  class="modal-thumbnail ${index === 0 ? 'active' : ''}" 
                                  data-index="${index}">
                         `).join('')}
@@ -462,24 +479,15 @@ class WasiPropertyDetailController {
     }
     // Render property features with modern icons
     renderPropertyFeatures(property) {
-        // Helper function to get characteristic value by description
-        const getCharacteristicValue = (descripcion) => {
-            if (!property.caracteristicas || !Array.isArray(property.caracteristicas)) return null;
-            const characteristic = property.caracteristicas.find(c => 
-                c.descripcion.toLowerCase().includes(descripcion.toLowerCase())
-            );
-            return characteristic ? characteristic.valor : null;
-        };
-
         const features = [
             { 
                 label: 'Habitaciones', 
-                value: getCharacteristicValue('Habitaciones') || property.habitaciones || 'N/A',
+                value: property.bedrooms || 'N/A',
                 icon: '🛏️'
             },
             { 
                 label: 'Baños', 
-                value: getCharacteristicValue('Baños') || property.banos || 'N/A',
+                value:  property.bathrooms || 'N/A',
                 icon: '🚿'
             },
             { 
@@ -489,7 +497,7 @@ class WasiPropertyDetailController {
             },
             { 
                 label: 'Parqueaderos', 
-                value: getCharacteristicValue('Parqueaderos') || property.parqueaderos || '0',
+                value: property.garages || '0',
                 icon: '🚗'
             }
         ].filter(feature => feature.value && feature.value !== 'N/A');
@@ -506,17 +514,9 @@ class WasiPropertyDetailController {
             </div>
         `;
     }
-    // Helper to get characteristic value
-    getCharacteristicValue(descripcion) {
-        if (!this.property.caracteristicas || !Array.isArray(this.property.caracteristicas)) return null;
-        const characteristic = this.property.caracteristicas.find(c => 
-            c.descripcion.toLowerCase().includes(descripcion.toLowerCase())
-        );
-        return characteristic ? characteristic.valor : null;
-    }
     // Render property description
     renderPropertyDescription(property) {
-        const description = property.observaciones || property.descripcion;
+        const description = property.observations;
         if (!description) return '';
 
         return `
@@ -528,12 +528,12 @@ class WasiPropertyDetailController {
     }
     // Render property characteristics section
     renderPropertyCharacteristics(property) {
-        if (!property.caracteristicas || property.caracteristicas.length === 0) {
+        if (!property.features || property.features.length === 0) {
             return '';
         }
 
-        const groupedCharacteristics = this.groupCharacteristics(property.caracteristicas);
-        
+        const groupedCharacteristics = this.groupCharacteristics(property.features);
+
         if (Object.keys(groupedCharacteristics).length === 0) {
             return '';
         }
@@ -548,7 +548,6 @@ class WasiPropertyDetailController {
     // Helper method to normalize group names and handle capitalization issues
     normalizeGroupName(groupName) {
         if (!groupName) return 'Otros';
-        
         // Convert to lowercase, then apply proper title case
         return groupName.toLowerCase()
             .split(' ')
@@ -556,25 +555,43 @@ class WasiPropertyDetailController {
             .join(' ');
     }
     // Group characteristics by normalized group name
-    groupCharacteristics(caracteristicas) {
-        const groupedCharacteristics = {};
-        
-        caracteristicas.forEach(char => {
-            const normalizedGroup = this.normalizeGroupName(char.grupo);
-            
-            // Skip "Datos del Inmueble" group
-            if (normalizedGroup === "Datos Del Inmueble") {
-                return;
+    groupCharacteristics(features) {
+    const groupedCharacteristics = {};
+    // Process internal features
+    if (features.internal && Array.isArray(features.internal)) {
+        features.internal.forEach(char => {
+            const groupName = 'Características Internas';
+            if (!groupedCharacteristics[groupName]) {
+                groupedCharacteristics[groupName] = [];
             }
-
-            if (!groupedCharacteristics[normalizedGroup]) {
-                groupedCharacteristics[normalizedGroup] = [];
-            }
-            groupedCharacteristics[normalizedGroup].push(char);
+            groupedCharacteristics[groupName].push({
+                id: char.id,
+                descripcion: char.nombre || char.name,
+                valor: true, // Todas las características en WASI son verdaderas si están presentes
+                tipo_campo: 'checkbox',
+                group: groupName
+            });
         });
-
-        return groupedCharacteristics;
     }
+    // Process external features
+    if (features.external && Array.isArray(features.external)) {
+        features.external.forEach(char => {
+            const groupName = 'Características Externas';
+            if (!groupedCharacteristics[groupName]) {
+                groupedCharacteristics[groupName] = [];
+            }
+            groupedCharacteristics[groupName].push({
+                id: char.id,
+                descripcion: char.nombre || char.name,
+                valor: true, // Todas las características en WASI son verdaderas si están presentes
+                tipo_campo: 'checkbox',
+                group: groupName
+            });
+        });
+    }
+    
+    return groupedCharacteristics;
+}
 
     // Render characteristic groups
     renderCharacteristicGroups(groupedCharacteristics) {
@@ -591,49 +608,44 @@ class WasiPropertyDetailController {
     // Render individual characteristic items
     renderCharacteristicItems(caracteristicas) {
         return caracteristicas.map(char => {
-            // Handle checkbox type fields with special formatting
-            if (char.tipo_campo === 'checkbox') {
-                const value = char.valor;
-                // Check if value indicates true (1, "1", "true", "sí", "si", "yes")
-                const isTrue = value === '1' || value === 1 || 
-                              (typeof value === 'string' && 
-                               ['true', 'sí', 'si', 'yes', 'verdadero'].includes(value.toLowerCase()));
-                
-                // Only show checkbox characteristics that are true
-                if (isTrue) {
-                    return `<div class="characteristic-item checkbox-item"><span class="check-icon">✓</span> ${char.descripcion}</div>`;
-                } else {
-                    // Skip false checkbox values
-                    return '';
-                }
+            // Para WASI, todas las características presentes son verdaderas (tipo checkbox)
+            if (char.tipo_campo === 'checkbox' || char.valor === true) {
+                // Solo mostrar características que están presentes (true)
+                return `<div class="characteristic-item checkbox-item">
+                    <span class="check-icon">✓</span> 
+                    <span class="characteristic-name">${char.descripcion}</span>
+                </div>`;
             } else {
-                // Standard format for non-checkbox fields - single line
-                return `<div class="characteristic-item"><span class="characteristic-label">${char.descripcion}:</span> <span class="characteristic-value">${char.valor || 'N/A'}</span></div>`;
+                // Formato estándar para campos con valores específicos
+                return `<div class="characteristic-item">
+                    <span class="characteristic-label">${char.descripcion}:</span> 
+                    <span class="characteristic-value">${char.valor || 'N/A'}</span>
+                </div>`;
             }
         }).filter(item => item !== '').join('');
     }
     // Render property map with geolocation
     renderPropertyMap(property) {
         // Check if coordinates are available
-        if (!property.coordenadas) {
+        if (!property.map) {
             return '';
         }
 
         let lat, lng;
 
         // Handle different coordinate formats
-        if (typeof property.coordenadas === 'string') {
-            // Format: "6.1562957:-75.6127396"
-            const coords = property.coordenadas.split(':');
+        if (typeof property.map === 'string') {
+            // Format: "6.1562957,-75.6127396"
+            const coords = property.map.split(',');
             if (coords.length !== 2) {
                 return '';
             }
             lat = parseFloat(coords[0]);
             lng = parseFloat(coords[1]);
-        } else if (property.coordenadas.latitud && property.coordenadas.longitud) {
-            // Format: { latitud: "6.1562957", longitud: "-75.6127396" }
-            lat = parseFloat(property.coordenadas.latitud);
-            lng = parseFloat(property.coordenadas.longitud);
+        } else if (property.map.latitude && property.map.longitude) {
+            // Format: { latitude: "6.1562957", longitude: "-75.6127396" }
+            lat = parseFloat(property.map.latitude);
+            lng = parseFloat(property.map.longitude);
         } else {
             return '';
         }
@@ -652,7 +664,7 @@ class WasiPropertyDetailController {
                 <div class="map-info">
                     <div class="map-address">
                         <span class="location-icon">📍</span>
-                        <span>${property.barrio}, ${property.municipio}</span>
+                        <span>${property.zone_label}, ${property.city_label}</span>
                     </div>
                 </div>
             </div>
@@ -670,6 +682,8 @@ class WasiPropertyDetailController {
     }
     // Initialize gallery functionality
     initializeGallery(images) {
+        logger.debug('🖼️ Initializing gallery with', images.length, 'images');
+        
         this.images = images;
         this.currentImageIndex = 0;
         this.modalCurrentIndex = 0;
@@ -680,8 +694,16 @@ class WasiPropertyDetailController {
         // Add click event to main image to open modal
         const mainImage = document.querySelector('.main-image');
         if (mainImage) {
-            this.mainImageClickHandler = () => this.openModal(0);
+            this.mainImageClickHandler = (e) => {
+                e.preventDefault();
+                logger.debug('🖱️ Main image clicked, opening modal');
+                this.openModal(0);
+            };
             mainImage.addEventListener('click', this.mainImageClickHandler);
+            mainImage.style.cursor = 'pointer';
+            logger.debug('✅ Main image click handler added');
+        } else {
+            logger.warn('❌ Main image not found');
         }
         
         // Add event listeners for navigation buttons
@@ -691,32 +713,50 @@ class WasiPropertyDetailController {
         if (prevBtn) {
             this.prevBtnClickHandler = (e) => {
                 e.preventDefault();
+                e.stopPropagation();
+                logger.debug('⬅️ Previous button clicked');
                 this.changeImage(-1);
             };
             prevBtn.addEventListener('click', this.prevBtnClickHandler);
+            logger.debug('✅ Previous button handler added');
+        } else {
+            logger.debug('ℹ️ Previous button not found (normal if only 1 image)');
         }
         
         if (nextBtn) {
             this.nextBtnClickHandler = (e) => {
                 e.preventDefault();
+                e.stopPropagation();
+                logger.debug('➡️ Next button clicked');
                 this.changeImage(1);
             };
             nextBtn.addEventListener('click', this.nextBtnClickHandler);
+            logger.debug('✅ Next button handler added');
+        } else {
+            logger.debug('ℹ️ Next button not found (normal if only 1 image)');
         }
         
         // Add event listeners for thumbnails
         const thumbnails = document.querySelectorAll('.thumbnail-item');
         this.thumbnailClickHandlers = [];
-        thumbnails.forEach((thumbnail) => {
+        
+        logger.debug('🔍 Found', thumbnails.length, 'thumbnails');
+        
+        thumbnails.forEach((thumbnail, index) => {
             const clickHandler = (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 // Get the correct index from data-index attribute
                 const targetIndex = parseInt(thumbnail.dataset.index);
+                logger.debug(`🖼️ Thumbnail ${index} clicked, target index: ${targetIndex}`);
                 this.setMainImage(targetIndex);
             };
             this.thumbnailClickHandlers.push({ element: thumbnail, handler: clickHandler });
             thumbnail.addEventListener('click', clickHandler);
+            thumbnail.style.cursor = 'pointer';
         });
+        
+        logger.debug('✅ Gallery initialization completed');
     }
     // Clean up gallery event listeners
     cleanupGalleryListeners() {
@@ -782,13 +822,24 @@ class WasiPropertyDetailController {
         const mainImage = document.querySelector('.main-image');
         const counter = document.querySelector('.image-counter');
         
+        if (!this.images || this.images.length === 0) {
+            logger.warn('❌ No images available for update');
+            return;
+        }
+        
         if (mainImage && this.images[this.currentImageIndex]) {
             const currentImage = this.images[this.currentImageIndex];
+            logger.debug(`🖼️ Updating main image to index ${this.currentImageIndex}:`, currentImage.imagen);
+            
             mainImage.src = currentImage.imagen;
             mainImage.setAttribute('data-index', this.currentImageIndex);
             
             // Preload next/previous images for smoother navigation
             this.preloadAdjacentImages();
+            
+            logger.debug('✅ Main image updated successfully');
+        } else {
+            logger.error('❌ Main image element or current image data not found');
         }
         
         if (counter) {
@@ -818,14 +869,29 @@ class WasiPropertyDetailController {
 
     // Open modal gallery
     openModal(index = 0) {
+        logger.debug('🖼️ Opening modal with index:', index);
+        
         const modal = document.getElementById('gallery-modal');
-        if (!modal || !this.images || this.images.length === 0) return;
+        if (!modal) {
+            logger.error('❌ Modal element not found');
+            return;
+        }
+        
+        if (!this.images || this.images.length === 0) {
+            logger.error('❌ No images available for modal');
+            return;
+        }
+        
+        logger.debug('✅ Modal and images found, proceeding with open');
         
         this.modalCurrentIndex = index;
         modal.classList.add('active');
         document.body.classList.add('modal-open');
         
         this.updateModalImage();
+        
+        // Remove any existing event listeners to prevent duplicates
+        this.cleanupModalListeners();
         
         // Add event listeners for modal navigation
         const modalCloseBtn = modal.querySelector('.modal-close');
@@ -834,23 +900,49 @@ class WasiPropertyDetailController {
         const modalThumbnails = modal.querySelectorAll('.modal-thumbnail');
         
         if (modalCloseBtn) {
-            modalCloseBtn.addEventListener('click', () => this.closeModal());
+            this.modalCloseHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.closeModal();
+            };
+            modalCloseBtn.addEventListener('click', this.modalCloseHandler);
+            logger.debug('✅ Modal close handler added');
         }
         
         if (modalPrevBtn) {
-            modalPrevBtn.addEventListener('click', () => this.changeModalImage(-1));
+            this.modalPrevHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.changeModalImage(-1);
+            };
+            modalPrevBtn.addEventListener('click', this.modalPrevHandler);
+            logger.debug('✅ Modal prev handler added');
         }
         
         if (modalNextBtn) {
-            modalNextBtn.addEventListener('click', () => this.changeModalImage(1));
+            this.modalNextHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.changeModalImage(1);
+            };
+            modalNextBtn.addEventListener('click', this.modalNextHandler);
+            logger.debug('✅ Modal next handler added');
         }
         
-        modalThumbnails.forEach((thumbnail) => {
-            thumbnail.addEventListener('click', () => {
-                const index = parseInt(thumbnail.dataset.index);
-                this.setModalImage(index);
-            });
+        this.modalThumbnailHandlers = [];
+        modalThumbnails.forEach((thumbnail, thumbIndex) => {
+            const handler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const targetIndex = parseInt(thumbnail.dataset.index);
+                logger.debug(`🖼️ Modal thumbnail ${thumbIndex} clicked, target index: ${targetIndex}`);
+                this.setModalImage(targetIndex);
+            };
+            this.modalThumbnailHandlers.push({ element: thumbnail, handler });
+            thumbnail.addEventListener('click', handler);
         });
+        
+        logger.debug('✅ Modal thumbnail handlers added:', modalThumbnails.length);
         
         // Add keyboard navigation
         this.handleKeyboard = (e) => {
@@ -868,6 +960,7 @@ class WasiPropertyDetailController {
         };
         
         document.addEventListener('keydown', this.handleKeyboard);
+        logger.debug('✅ Modal opened successfully');
     }
 
     // Close modal
@@ -878,8 +971,46 @@ class WasiPropertyDetailController {
             document.body.classList.remove('modal-open');
         }
         
+        this.cleanupModalListeners();
+        
         if (this.handleKeyboard) {
             document.removeEventListener('keydown', this.handleKeyboard);
+            this.handleKeyboard = null;
+        }
+        
+        logger.debug('✅ Modal closed');
+    }
+
+    // Clean up modal event listeners
+    cleanupModalListeners() {
+        const modal = document.getElementById('gallery-modal');
+        if (!modal) return;
+        
+        // Clean up button listeners
+        if (this.modalCloseHandler) {
+            const closeBtn = modal.querySelector('.modal-close');
+            if (closeBtn) closeBtn.removeEventListener('click', this.modalCloseHandler);
+            this.modalCloseHandler = null;
+        }
+        
+        if (this.modalPrevHandler) {
+            const prevBtn = modal.querySelector('.modal-nav.prev');
+            if (prevBtn) prevBtn.removeEventListener('click', this.modalPrevHandler);
+            this.modalPrevHandler = null;
+        }
+        
+        if (this.modalNextHandler) {
+            const nextBtn = modal.querySelector('.modal-nav.next');
+            if (nextBtn) nextBtn.removeEventListener('click', this.modalNextHandler);
+            this.modalNextHandler = null;
+        }
+        
+        // Clean up thumbnail listeners
+        if (this.modalThumbnailHandlers) {
+            this.modalThumbnailHandlers.forEach(({ element, handler }) => {
+                element.removeEventListener('click', handler);
+            });
+            this.modalThumbnailHandlers = [];
         }
     }
 
@@ -926,6 +1057,9 @@ class WasiPropertyDetailController {
         // Clean up gallery event listeners
         this.cleanupGalleryListeners();
         
+        // Clean up modal event listeners
+        this.cleanupModalListeners();
+        
         // Remove resize event listener
         if (this.handleResize) {
             window.removeEventListener('resize', this.handleResize);
@@ -961,6 +1095,8 @@ class WasiPropertyDetailController {
         this.property = null;
         this.currentImageIndex = 0;
         this.modalCurrentIndex = 0;
+        
+        logger.debug('✅ Complete cleanup performed');
     }
     // Enhanced debounce utility with cleanup
     debounce(func, wait) {
@@ -1149,12 +1285,12 @@ class WasiPropertyDetailController {
         const property = this.property;
         
         // Generate clean property info
-        const propertyType = property.clase_inmueble || 'Propiedad';
-        const location = property.municipio || '';
+        const propertyType = this.getPropertyTypeLabel(property.id_property_type) || 'Propiedad';
+        const location = property.city_label || '';
         const serviceType = property.tipo_servicio || 'Disponible';
         const price = this.formatCurrency(property.valor_arriendo1 || property.valor_venta1 || 0);
-        const rooms = property.habitaciones || this.getCharacteristicValue('Habitaciones');
-        const bathrooms = property.banos || this.getCharacteristicValue('Baños');
+        const rooms = property.bedrooms;
+        const bathrooms = property.bathrooms;
 
         // Create elegant title for social sharing
         const socialTitle = `🏠 ${propertyType} en ${location}`;
