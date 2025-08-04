@@ -20,11 +20,12 @@ const envVars = {
     VITE_ENCRYPTION_SALT: process.env.VITE_ENCRYPTION_SALT || '',
     WASI_API_TOKEN: process.env.WASI_API_TOKEN || '',
     WASI_API_ID: process.env.WASI_API_ID || '',
-    WASI_API_URL: process.env.WASI_API_URL || ''
+    WASI_API_URL: process.env.WASI_API_URL || '',
+    PROPERTIES_KEY: process.env.PROPERTIES_KEY || ''
 };
 
 // Verificar variables críticas
-const criticalVars = ['VITE_API_TOKEN', 'VITE_ENCRYPTION_KEY', 'VITE_ENCRYPTION_SALT'];
+const criticalVars = ['VITE_API_TOKEN', 'VITE_ENCRYPTION_KEY', 'VITE_ENCRYPTION_SALT', 'PROPERTIES_KEY'];
 const missingVars = criticalVars.filter(varName => !envVars[varName] || envVars[varName] === '');
 
 if (missingVars.length > 0) {
