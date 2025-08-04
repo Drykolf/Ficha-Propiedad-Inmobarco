@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Properties Manager</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="assets/images/Logo.png">
+    <link rel="apple-touch-icon" href="assets/images/Logo.png">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/properties-manager.css">
+</head>
+<body>
+    <!-- Header con Logo -->
+    <header class="property-header-with-logo">
+        <div class="header-content">
+            <div class="logo-section">
+                <img src="../assets/images/Logo.png" alt="Inmobarco - Inmobiliaria" class="logo-inmobarco">
+                <div class="header-title-section">
+                    <h1 class="header-main-title">Detalles de Propiedad</h1>
+                    <p class="header-subtitle">Encuentra tu hogar ideal</p>
+                </div>
+            </div>
+            <div class="company-info">
+                <p class="company-tagline">Tu hogar ideal te está esperando</p>
+                <p class="company-contact">www.inmobarco.com</p>
+            </div>
+        </div>
+    </header>
+    
+
+    <!-- Main content -->
+    <div class="container">
+        <!-- Loading indicator -->
+        <div id="loading" class="loading">
+            <p>Cargando configuración...</p>
+        </div>
+
+        <!-- Login form -->
+        <div id="loginContainer" class="login-container" style="display: none;">
+            <h2>Acceso al Gestor de Propiedades</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="password">Contraseña:</label>
+                    <input type="password" id="password" name="password" autocomplete="current-password">
+                </div>
+                <button type="submit" class="login-btn">Ingresar</button>
+                <div id="errorMessage" class="error-message">
+                    Contraseña incorrecta. Inténtalo de nuevo.
+                </div>
+            </form>
+        </div>
+
+        <div id="properties-content" class="properties-content">
+            <!-- Property content will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/logger.js"></script>
+    <script src="../js/env-config.js"></script>
+    <script src="../js/property-encryption.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/properties.js"></script>
+</body>
+</html>

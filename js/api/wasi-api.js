@@ -672,11 +672,11 @@ class WasiPropertyDetailController {
     }
     // Render property code section for agents
     renderPropertyCode(property) {
-        if (!property.codigo) return '';
+        if (!property.id_property) return '';
 
         return `
             <div class="property-code-discrete">
-                <span class="code-ref">Ref: ${property.codigo}</span>
+                <span class="code-ref">Ref: ${property.id_property}</span>
             </div>
         `;
     }

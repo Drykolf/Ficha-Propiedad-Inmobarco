@@ -79,13 +79,18 @@ class EnvConfig {
             encryption: {
                 key: env.VITE_ENCRYPTION_KEY,
                 salt: env.VITE_ENCRYPTION_SALT
-            }
+            },
+            propertiesKey: env.PROPERTIES_KEY || '123'
         };
     }
 
     async _loadFromConfigFile() {
+        // Detectar si estamos en la carpeta manager
+        const isInManager = window.location.pathname.includes('/manager/');
+        const configPath = isInManager ? '../config.json' : './config.json';
+
         try {
-            const response = await fetch('./config.json');
+            const response = await fetch(configPath);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -120,6 +125,10 @@ class EnvConfig {
 
     getWasiConfig() {
         return this.config?.wasi || null;
+    }
+
+    getPropertiesKey() {
+        return this.config?.propertiesKey || null;
     }
 
     getCompanyConfig() {

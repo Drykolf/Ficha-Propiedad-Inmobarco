@@ -15,7 +15,8 @@
         VITE_ENCRYPTION_SALT: '{{VITE_ENCRYPTION_SALT}}',
         WASI_API_TOKEN: '{{WASI_API_TOKEN}}',
         WASI_API_ID: '{{WASI_API_ID}}',
-        WASI_API_URL: '{{WASI_API_URL}}'
+        WASI_API_URL: '{{WASI_API_URL}}',
+        PROPERTIES_KEY: '{{PROPERTIES_KEY}}',
     };
 
     console.log('Environment variables template loaded - will be replaced during build');
