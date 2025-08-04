@@ -32,10 +32,12 @@ class EnvConfig {
         try {
             // Check for environment variables first (production)
             if (this._hasValidEnvVars()) {
+                logger.debug('✅ Using environment variables for configuration');
                 return this._createConfigFromEnv();
             }
-
+            
             // Fallback to config.json (development)
+            logger.debug('⚠️ Environment variables not found, attempting to load config.json...');
             return await this._loadFromConfigFile();
 
         } catch (error) {
