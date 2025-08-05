@@ -234,7 +234,7 @@ async function fetchPropertyDataWasi(propertyId) {
                 }
 
                 if (property.main_image) {
-                    images.push(property.main_image);
+                    images.push(property.main_image.url);
                 }
                 // Filter out invalid URLs and ensure they're properly formatted
                 return images.filter(img => img && typeof img === 'string' && img.trim().length > 0);
