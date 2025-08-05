@@ -80,61 +80,68 @@ class WasiAPI {
         const id = propertyId || this.propertyId;
         const endpoint = `/property/get/${id}`;
         
-        // Reordenar métodos: usar CORS proxy primero para mayor confiabilidad
-        const methods = [
-            // Método 1: CORS proxy (más confiable para desarrollo)
-            () => {
-                const directUrl = this.buildDirectUrl(endpoint);
-                const corsProxy = 'https://api.allorigins.win/raw?url=';
-                return { 
-                    url: corsProxy + encodeURIComponent(directUrl.url), 
-                    type: 'cors-proxy',
-                    options: {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'application/json'
-                            // NO incluir Content-Type para evitar preflight
-                        }
-                    }
-                };
-            },
-            
-            // Método 2: Directo con headers mínimos
-            () => {
-                const { url } = this.buildDirectUrl(endpoint);
-                return {
-                    url,
-                    type: 'direct-minimal',
-                    options: {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'application/json'
-                            // Solo Accept, sin Content-Type
-                        }
-                    }
-                };
-            },
-            
-            // Método 3: Proxy local/netlify
-            () => {
-                const { url } = this.buildApiUrl(endpoint, id);
-                return {
-                    url,
-                    type: 'proxy',
-                    options: {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'application/json'
-                        }
-                    }
-                };
-            }
+        // Múltiples proxies CORS como fallback (igual que searchProperties)
+        const corsProxies = [
+            'https://api.allorigins.win/raw?url=',
+            'https://corsproxy.io/?',
+            'https://cors-anywhere.herokuapp.com/',
+            'https://api.codetabs.com/v1/proxy?quest='
         ];
+        
+        // Usar el mismo sistema de fallback que searchProperties
+        const methods = [];
+        
+        // Generar métodos para cada proxy CORS
+        corsProxies.forEach((corsProxy, index) => {
+            methods.push(() => {
+                const directUrl = this.buildDirectUrl(endpoint);
+                const url = new URL(directUrl.url);
+                
+                // Para getProperty, añadir el ID de propiedad si no está en el endpoint
+                if (id && !endpoint.includes(id)) {
+                    url.searchParams.append('property_id', id);
+                }
+                
+                return { 
+                    url: corsProxy + encodeURIComponent(url.toString()), 
+                    type: `cors-proxy-${index + 1}`,
+                    options: {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    }
+                };
+            });
+        });
+        
+        // Método directo (probablemente fallará por CORS)
+        methods.push(() => {
+            const url = new URL(`${this.baseUrl}${endpoint}`);
+            url.searchParams.append('id_company', this.companyId);
+            url.searchParams.append('wasi_token', this.token);
+            
+            // Para getProperty, añadir el ID de propiedad si no está en el endpoint
+            if (id && !endpoint.includes(id)) {
+                url.searchParams.append('property_id', id);
+            }
+            
+            return {
+                url: url.toString(),
+                type: 'direct',
+                options: {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                }
+            };
+        });
 
         for (let i = 0; i < methods.length; i++) {
             try {
                 const { url, type, options } = methods[i]();
-                logger.debug(`🔄 Intentando método ${i + 1} (${type}):`, url);
+                logger.debug(`🔄 Obteniendo propiedad ${id} - Método ${i + 1} (${type}):`, url);
                 
                 const response = await fetch(url, options);
                 logger.debug(`✅ Respuesta método ${type}:`, response.status, response.statusText);
@@ -145,14 +152,14 @@ class WasiAPI {
                 }
 
                 const data = await response.json();
-                logger.info('✅ Datos recibidos exitosamente');
+                logger.info(`✅ Propiedad ${id} cargada exitosamente`);
                 return data;
                 
             } catch (error) {
-                logger.warn(`❌ Método ${i + 1} falló:`, error.message);
+                logger.warn(`❌ Método ${i + 1} (${methods[i]().type}) falló:`, error.message);
 
                 if (i === methods.length - 1) {
-                    throw new Error(`Todos los métodos fallaron. Último error: ${error.message}`);
+                    throw new Error(`Todos los métodos fallaron para obtener la propiedad ${id}. Último error: ${error.message}`);
                 }
                 continue;
             }

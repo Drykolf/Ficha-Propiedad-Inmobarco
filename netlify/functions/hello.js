@@ -90,7 +90,7 @@ function formatCurrency(amount) {
 }
 
 // Function to fetch property data from Arrendasoft API
-async function fetchPropertyData(propertyId) {
+async function fetchPropertyDataNuby(propertyId) {
     try {
         // Log environment variables (safely)
         console.log('API Config:', {
@@ -148,7 +148,128 @@ async function fetchPropertyData(propertyId) {
         return null;
     }
 }
+async function fetchPropertyDataWasi(propertyId) {
+    try {
+        // Log environment variables (safely)
+        console.log('WASI API Config:', {
+            wasiUrl: process.env.WASI_API_URL ? 'SET' : 'MISSING',
+            wasiToken: process.env.WASI_API_TOKEN ? 'SET' : 'MISSING',
+            wasiId: process.env.WASI_API_ID ? 'SET' : 'MISSING',
+            propertyId: propertyId
+        });
+        
+        if (!process.env.WASI_API_URL || !process.env.WASI_API_TOKEN || !process.env.WASI_API_ID) {
+            console.error('Missing required WASI API configuration');
+            return null;
+        }
+        
+        // Construct WASI API URL for getting a single property
+        const wasiApiUrl = new URL(`${process.env.WASI_API_URL}/property/get/${propertyId}`);
+        wasiApiUrl.searchParams.append('id_company', process.env.WASI_API_ID);
+        wasiApiUrl.searchParams.append('wasi_token', process.env.WASI_API_TOKEN);
+        
+        console.log('Making WASI API request to:', wasiApiUrl.toString());
+        
+        const response = await makeRequest(wasiApiUrl.toString(), {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'Inmobarco-Property-Template/1.0'
+            }
+        });
 
+        console.log('WASI API Response:', {
+            statusCode: response.statusCode,
+            hasData: !!response.data,
+            dataPreview: response.statusCode !== 200 ? response.data : 'SUCCESS'
+        });
+
+        if (response.statusCode === 200 && response.data) {
+            const property = response.data;
+            
+            // Map WASI API response to our format
+            const formatPrice = (forRent, forSale, rentPrice, salePrice) => {
+                const rentPriceFormatted = rentPrice ? formatCurrency(rentPrice) : null;
+                const salePriceFormatted = salePrice ? formatCurrency(salePrice) : null;
+                
+                if (forRent === "true" && forSale === "true") {
+                    return `Arriendo: ${rentPriceFormatted || 'Consultar'} | Venta: ${salePriceFormatted || 'Consultar'}`;
+                } else if (forRent === "true") {
+                    return `Arriendo: ${rentPriceFormatted || 'Consultar precio'}`;
+                } else if (forSale === "true") {
+                    return `Venta: ${salePriceFormatted || 'Consultar precio'}`;
+                } else {
+                    return 'Consultar precio';
+                }
+            };
+            
+            const formatLocation = (city, zone, neighborhood) => {
+                const parts = [];
+                if (neighborhood) parts.push(neighborhood);
+                if (zone) parts.push(zone);
+                if (city) parts.push(city);
+                return parts.join(', ') || 'Excelente ubicación';
+            };
+            
+            const formatDescription = (bedrooms, bathrooms, area, propertyType) => {
+                const parts = [];
+                if (bedrooms) parts.push(`${bedrooms} hab`);
+                if (bathrooms) parts.push(`${bathrooms} baños`);
+                if (area) parts.push(`${area} m²`);
+                if (propertyType) parts.push(propertyType);
+                return parts.join(' • ') || 'Hermosa propiedad';
+            };
+            
+            // Extract images from WASI format
+            const extractImages = (property) => {
+                const images = [];
+                
+                // WASI stores images in different possible fields
+                if (property.images && Array.isArray(property.images)) {
+                    images.push(...property.images.map(img => typeof img === 'string' ? img : img.url || img.path));
+                }
+                
+                if (property.photos && Array.isArray(property.photos)) {
+                    images.push(...property.photos.map(photo => typeof photo === 'string' ? photo : photo.url || photo.path));
+                }
+
+                if (property.main_image) {
+                    images.push(property.main_image);
+                }
+                // Filter out invalid URLs and ensure they're properly formatted
+                return images.filter(img => img && typeof img === 'string' && img.trim().length > 0);
+            };
+            
+            return {
+                title: `${property.property_type_label || 'Propiedad'} en ${property.city_label || 'Excelente ubicación'}`,
+                description: formatDescription(
+                    property.bedrooms, 
+                    property.bathrooms, 
+                    property.area, 
+                    property.property_type_label
+                ),
+                price: formatPrice(
+                    property.for_rent, 
+                    property.for_sale, 
+                    property.rent_price, 
+                    property.sale_price
+                ),
+                location: formatLocation(
+                    property.city_label, 
+                    property.zone_label, 
+                    property.neighborhood_label
+                ),
+                images: extractImages(property)
+            };
+        }
+        
+        console.error('WASI API returned non-200 status:', response.statusCode);
+        return null;
+    } catch (error) {
+        console.error('Error fetching WASI property data:', error);
+        return null;
+    }
+}
 // Generate dynamic HTML with property meta tags
 function generateHTML(property, url) {
     const baseUrl = new URL(url).origin;
@@ -300,8 +421,14 @@ exports.handler = async (event, context) => {
                 
                 // Only try to fetch if we have a valid decrypted ID
                 if (propertyId && propertyId !== encryptedId) {
-                    // Fetch property data from API
-                    propertyData = await fetchPropertyData(propertyId);
+                    // Fetch property data from appropriate API based on property ID
+                    if (propertyId < 2000) {
+                        console.log(`Using Arrendasoft API for property ID: ${propertyId}`);
+                        propertyData = await fetchPropertyDataNuby(propertyId);
+                    } else {
+                        console.log(`Using WASI API for property ID: ${propertyId}`);
+                        propertyData = await fetchPropertyDataWasi(propertyId);
+                    }
                     
                     if (propertyData) {
                         console.log('Property data loaded successfully');
@@ -309,10 +436,10 @@ exports.handler = async (event, context) => {
                         console.log('Could not fetch property data, using mock data for testing');
                         // Mock data for testing
                         propertyData = {
-                            title: `Propiedad en medellin`,
+                            title: `Propiedad en Medellín`,
                             description: 'Hermosa propiedad en excelente ubicación',
                             price: 'Consultar Precio',
-                            location: 'Medellin, Colombia',
+                            location: 'Medellín, Colombia',
                             images: [`https://ficha.inmobarco.com/assets/images/Logo.png`]
                         };
                     }
