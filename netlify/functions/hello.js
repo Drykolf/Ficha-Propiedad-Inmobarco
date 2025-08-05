@@ -241,7 +241,8 @@ async function fetchPropertyDataWasi(propertyId) {
             };
             
             return {
-                title: `${property.property_type_label || 'Propiedad'} en ${property.city_label || 'Excelente ubicación'}`,
+                title: property.title ||
+                `${property.property_type_label || 'Propiedad'} en ${property.city_label || 'Excelente ubicación'}`,
                 description: formatDescription(
                     property.bedrooms, 
                     property.bathrooms, 
