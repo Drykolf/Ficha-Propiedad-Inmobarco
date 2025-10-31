@@ -458,7 +458,7 @@ class PropertyManagerAuth {
             propertiesList = this.allProperties.map((property, index) => `
                 <div class="property-item">
                     <div class="property-content">
-                        <h3>${property.registration_number || 'Sin numero de apto'}</h3>
+                        <h3>${property.registration_number || property.reference || 'Sin referencia'}</h3>
                         <p class="property-id">ID: ${property.id_property || property.id || 'N/A'}</p>
                         <p class="property-price">
                         ${property.for_rent === "true" ? 'Alquiler ' + property.rent_price_label : ''}
