@@ -465,7 +465,7 @@ class PropertyManagerAuth {
                         ${property.for_sale === "true" ? 'Venta ' + property.sale_price_label : ''}
                         </p>
                         <p class="property-location">${property.city_label || ''} ${property.zone_label ? '- ' + property.zone_label : ''}</p>
-                        <p class="property-details">${property.bedrooms ? property.bedrooms + ' hab' : ''} ${property.bathrooms ? '• ' + property.bathrooms + ' baños' : ''} ${property.area ? '• ' + property.area + ' m²' : ''}</p>
+                        <p class="property-details">${property.bedrooms ? property.bedrooms + ' hab' : ''} ${property.bathrooms ? '• ' + property.bathrooms + ' baños' : ''} ${property.area ? '• ' + property.area + ' m²' : ''} ${property.garages ? '• ' + property.garages + ' parqueos' : ''}</p>
                     </div>
                     <div class="property-actions">
                         <button class="action-btn copy-link-btn" onclick="window.propertyManagerAuth.copyPropertyLink('${property.id_property || property.id || ''}', '${property.registration_number || 'Propiedad'}')">
@@ -519,6 +519,79 @@ class PropertyManagerAuth {
                 <h1>Gestor de Propiedades</h1>
                 <button id="logoutBtn" class="logout-btn">Cerrar Sesión</button>
             </div>
+            <div class="search-container">
+                <div class="search-box">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        class="search-input" 
+                        placeholder="Buscar por referencia..."
+                    />
+                    <button id="searchBtn" class="search-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        Buscar
+                    </button>
+                    <button id="clearSearchBtn" class="clear-search-btn" style="display: none;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                        Limpiar
+                    </button>
+                </div>
+                <div class="search-filters">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label class="filter-checkbox">
+                                <input type="checkbox" id="forSaleFilter" />
+                                <span>En venta</span>
+                            </label>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" id="forRentFilter" />
+                                <span>En alquiler</span>
+                            </label>
+                        </div>
+                        <div class="filter-input-group">
+                            <label for="cityFilter">Ciudad:</label>
+                            <select id="cityFilter" class="filter-select">
+                                <option value="">Todas</option>
+                                <option value="291">Envigado</option>
+                                <option value="389">Itagüí</option>
+                                <option value="416">La Estrella</option>
+                                <option value="496">Medellín</option>
+                                <option value="698">Sabaneta</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="filter-row">
+                        <div class="filter-input-group">
+                            <label for="minBedroomsFilter">Habitaciones mín:</label>
+                            <input type="number" id="minBedroomsFilter" min="0" placeholder="0" />
+                        </div>
+                        <div class="filter-input-group">
+                            <label for="bathroomsFilter">Baños:</label>
+                            <input type="number" id="bathroomsFilter" min="0" placeholder="0" />
+                        </div>
+                        <div class="filter-input-group">
+                            <label for="garagesFilter">Garajes:</label>
+                            <input type="number" id="garagesFilter" min="0" placeholder="0" />
+                        </div>
+                    </div>
+                    <div class="filter-row">
+                        <div class="filter-input-group">
+                            <label for="maxPriceFilter">Precio máx:</label>
+                            <input type="number" id="maxPriceFilter" min="0" placeholder="Sin límite" />
+                        </div>
+                        <div class="filter-input-group">
+                            <label for="minAreaFilter">Área mín (m²):</label>
+                            <input type="number" id="minAreaFilter" min="0" placeholder="0" />
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="properties-list">
                 <h2>Lista de Propiedades</h2>
                 ${progressIndicator}
@@ -532,6 +605,9 @@ class PropertyManagerAuth {
         document.getElementById('logoutBtn').addEventListener('click', () => {
             this.logout();
         });
+
+        // Attach search listeners
+        this.attachSearchListeners();
     }
 
     showPropertiesError(errorMessage) {
@@ -554,6 +630,195 @@ class PropertyManagerAuth {
         document.getElementById('logoutBtn').addEventListener('click', () => {
             this.logout();
         });
+    }
+
+    // Métodos de búsqueda
+    attachSearchListeners() {
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+
+        if (searchInput) {
+            // Búsqueda al presionar Enter
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.performSearch();
+                }
+            });
+
+            // Mostrar/ocultar botón limpiar
+            searchInput.addEventListener('input', (e) => {
+                if (clearSearchBtn) {
+                    clearSearchBtn.style.display = e.target.value.trim() ? 'flex' : 'none';
+                }
+            });
+        }
+
+        if (searchBtn) {
+            searchBtn.addEventListener('click', () => {
+                this.performSearch();
+            });
+        }
+
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', () => {
+                this.clearSearch();
+            });
+        }
+    }
+
+    async performSearch() {
+        const searchInput = document.getElementById('searchInput');
+
+        if (!searchInput) return;
+
+        try {
+            // Mostrar indicador de carga
+            this.showSearchLoading();
+
+            // Obtener configuración WASI
+            const wasiConfig = window.envConfig.getWasiConfig();
+            if (!wasiConfig) {
+                throw new Error('Configuración WASI no encontrada');
+            }
+
+            // Crear instancia de WASI API
+            const wasiApi = new WasiAPI(wasiConfig);
+
+            // Construir parámetros de búsqueda base
+            const searchParams = {
+                short: 'true',
+                take: '100'
+            };
+
+            // Agregar término de búsqueda si está presente
+            const searchTerm = searchInput.value.trim();
+            if (searchTerm) {
+                searchParams.match = searchTerm;
+            }
+
+            // Agregar filtros adicionales si están definidos
+            const forSale = document.getElementById('forSaleFilter');
+            const forRent = document.getElementById('forRentFilter');
+            const cityFilter = document.getElementById('cityFilter');
+            const minBedrooms = document.getElementById('minBedroomsFilter');
+            const bathrooms = document.getElementById('bathroomsFilter');
+            const garages = document.getElementById('garagesFilter');
+            const maxPrice = document.getElementById('maxPriceFilter');
+            const minArea = document.getElementById('minAreaFilter');
+
+            if (forSale && forSale.checked) {
+                searchParams.for_sale = 'true';
+            }
+
+            if (forRent && forRent.checked) {
+                searchParams.for_rent = 'true';
+            }
+
+            if (cityFilter && cityFilter.value) {
+                searchParams.id_city = cityFilter.value;
+            }
+
+            if (minBedrooms && minBedrooms.value) {
+                searchParams.min_bedrooms = minBedrooms.value;
+            }
+
+            if (bathrooms && bathrooms.value) {
+                searchParams.bathrooms = bathrooms.value;
+            }
+
+            if (garages && garages.value) {
+                searchParams.garages = garages.value;
+            }
+
+            if (maxPrice && maxPrice.value) {
+                searchParams.max_price = maxPrice.value;
+            }
+
+            if (minArea && minArea.value) {
+                searchParams.min_area = minArea.value;
+            }
+
+            logger.debug('🔍 Realizando búsqueda:', searchParams);
+
+            // Realizar búsqueda
+            const results = await wasiApi.searchProperties(searchParams);
+            const properties = this.extractPropertiesFromData(results);
+
+            logger.debug(`✅ Búsqueda completada: ${properties.length} resultados`);
+
+            // Actualizar propiedades mostradas
+            this.allPropertiesFromAPI = properties;
+            this.allProperties = properties;
+            this.currentPage = 2;
+            this.hasMoreProperties = false;
+
+            // Mostrar resultados
+            this.displayAllProperties();
+
+            // Mostrar notificación
+            if (properties.length > 0) {
+                this.showNotification(`Se encontraron ${properties.length} propiedades`, 'success');
+            } else {
+                this.showNotification('No se encontraron propiedades con ese criterio', 'info');
+            }
+
+        } catch (error) {
+            console.error('Error en búsqueda:', error);
+            this.showNotification('Error al realizar la búsqueda: ' + error.message, 'error');
+            this.displayAllProperties(); // Mostrar propiedades actuales
+        }
+    }
+
+    clearSearch() {
+        const searchInput = document.getElementById('searchInput');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+
+        if (searchInput) {
+            searchInput.value = '';
+        }
+
+        if (clearSearchBtn) {
+            clearSearchBtn.style.display = 'none';
+        }
+
+        // Limpiar todos los filtros
+        const forSale = document.getElementById('forSaleFilter');
+        const forRent = document.getElementById('forRentFilter');
+        const cityFilter = document.getElementById('cityFilter');
+        const minBedrooms = document.getElementById('minBedroomsFilter');
+        const bathrooms = document.getElementById('bathroomsFilter');
+        const garages = document.getElementById('garagesFilter');
+        const maxPrice = document.getElementById('maxPriceFilter');
+        const minArea = document.getElementById('minAreaFilter');
+
+        if (forSale) forSale.checked = false;
+        if (forRent) forRent.checked = false;
+        if (cityFilter) cityFilter.value = '';
+        if (minBedrooms) minBedrooms.value = '';
+        if (bathrooms) bathrooms.value = '';
+        if (garages) garages.value = '';
+        if (maxPrice) maxPrice.value = '';
+        if (minArea) minArea.value = '';
+
+        // Recargar todas las propiedades
+        this.showNotification('Cargando todas las propiedades...', 'info');
+        this.loadProperties();
+    }
+
+    showSearchLoading() {
+        const container = document.getElementById('properties-content');
+        const propertiesList = container.querySelector('.properties-list');
+        
+        if (propertiesList) {
+            propertiesList.innerHTML = `
+                <h2>Lista de Propiedades</h2>
+                <div class="loading-properties">
+                    <p>Buscando propiedades...</p>
+                </div>
+            `;
+        }
     }
 
     // Método público para verificar autenticación
