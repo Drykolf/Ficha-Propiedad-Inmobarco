@@ -214,6 +214,48 @@ body {
     position: relative;
 }
 
+/* Download Photos Button on Thumbnail */
+.thumbnail-item .download-photos-btn {
+    position: absolute;
+    bottom: 0.5rem;
+    right: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: var(--primary-color);
+    color: var(--white);
+    border: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 2px 8px rgba(27, 153, 211, 0.4);
+    z-index: 15;
+}
+
+.thumbnail-item .download-photos-btn:hover {
+    background: var(--secondary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(27, 153, 211, 0.5);
+}
+
+.thumbnail-item .download-photos-btn:active {
+    transform: translateY(0);
+}
+
+.thumbnail-item .download-photos-btn svg {
+    flex-shrink: 0;
+}
+
+/* Hide download button on mobile and tablet */
+@media (max-width: 1024px) {
+    .thumbnail-item .download-photos-btn {
+        display: none;
+    }
+}
+
 .thumbnail-overlay {
     position: absolute;
     top: 0;

@@ -447,6 +447,16 @@ class WasiPropertyDetailController {
                         ${index === (thumbnailCount - 1) && totalImages > thumbnailCount + 1 ? `
                             <div class="thumbnail-overlay">+${totalImages - thumbnailCount - 1}</div>
                         ` : ''}
+                        ${index === (thumbnailCount - 1) && totalImages >= 3 ? `
+                            <button class="download-photos-btn" aria-label="Descargar todas las fotos" title="Descargar fotos">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                Descargar fotos
+                            </button>
+                        ` : ''}
                     </div>
                 `).join('')}
             </div>
@@ -736,6 +746,19 @@ class WasiPropertyDetailController {
             logger.debug('ℹ️ Next button not found (normal if only 1 image)');
         }
         
+        // Add event listener for download button
+        const downloadBtn = document.querySelector('.download-photos-btn');
+        if (downloadBtn) {
+            this.downloadBtnClickHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                logger.debug('📥 Download button clicked');
+                this.downloadAllPhotos();
+            };
+            downloadBtn.addEventListener('click', this.downloadBtnClickHandler);
+            logger.debug('✅ Download button handler added');
+        }
+        
         // Add event listeners for thumbnails
         const thumbnails = document.querySelectorAll('.thumbnail-item');
         this.thumbnailClickHandlers = [];
@@ -781,6 +804,13 @@ class WasiPropertyDetailController {
             this.nextBtnClickHandler = null;
         }
         
+        // Clean download button listener
+        const downloadBtn = document.querySelector('.download-photos-btn');
+        if (downloadBtn && this.downloadBtnClickHandler) {
+            downloadBtn.removeEventListener('click', this.downloadBtnClickHandler);
+            this.downloadBtnClickHandler = null;
+        }
+        
         // Clean thumbnail listeners
         if (this.thumbnailClickHandlers) {
             this.thumbnailClickHandlers.forEach(({ element, handler }) => {
@@ -788,6 +818,201 @@ class WasiPropertyDetailController {
             });
             this.thumbnailClickHandlers = [];
         }
+    }
+    
+    // Download all photos
+    async downloadAllPhotos() {
+        if (!this.images || this.images.length === 0) {
+            logger.warn('⚠️ No images available to download');
+            return;
+        }
+
+        logger.debug(`📥 Starting download of ${this.images.length} photos as ZIP`);
+
+        // Check if JSZip is available
+        if (typeof JSZip === 'undefined') {
+            logger.error('❌ JSZip library not loaded');
+            alert('Error: Librería de compresión no disponible. Recarga la página.');
+            return;
+        }
+
+        await this.downloadAsZip();
+
+        logger.debug('🎉 ZIP download process completed');
+    }
+
+    // Download images as ZIP file using image proxying through canvas
+    async downloadAsZip() {
+        logger.debug('📦 Creating ZIP file with all images');
+        
+        const zip = new JSZip();
+        const imgFolder = zip.folder('fotos');
+        const propertyRef = this.property.id_property || 'propiedad';
+        const totalImages = this.images.length;
+        
+        // Show loading indicator with progress
+        const loadingOverlay = document.createElement('div');
+        loadingOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        `;
+        
+        const loadingContent = document.createElement('div');
+        loadingContent.style.cssText = 'text-align: center;';
+        loadingContent.innerHTML = `
+            <div style="font-size: 24px; margin-bottom: 20px;">📦 Preparando descarga</div>
+            <div id="download-progress" style="font-size: 18px; margin-bottom: 15px;">Procesando imágenes: 0/${totalImages}</div>
+            <div style="width: 300px; height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden;">
+                <div id="progress-bar" style="width: 0%; height: 100%; background: #1B99D3; transition: width 0.3s;"></div>
+            </div>
+        `;
+        loadingOverlay.appendChild(loadingContent);
+        document.body.appendChild(loadingOverlay);
+
+        try {
+            // Process images one by one to avoid memory issues
+            for (let i = 0; i < this.images.length; i++) {
+                const image = this.images[i];
+                const imageUrl = image.url_original || image.imagen;
+                
+                try {
+                    // Update progress
+                    const progressText = document.getElementById('download-progress');
+                    const progressBar = document.getElementById('progress-bar');
+                    if (progressText) progressText.textContent = `Procesando imágenes: ${i + 1}/${totalImages}`;
+                    if (progressBar) progressBar.style.width = `${((i + 1) / totalImages) * 100}%`;
+                    
+                    // Load image through Image object to avoid CORS
+                    const blob = await this.loadImageAsBlob(imageUrl);
+                    
+                    if (blob) {
+                        const extension = imageUrl.split('.').pop().split('?')[0] || 'jpg';
+                        imgFolder.file(`${propertyRef}_foto_${i + 1}.${extension}`, blob);
+                        logger.debug(`✅ Added photo ${i + 1}/${totalImages} to ZIP`);
+                    } else {
+                        logger.warn(`⚠️ Could not process photo ${i + 1}`);
+                    }
+                } catch (error) {
+                    logger.error(`❌ Error processing photo ${i + 1}:`, error);
+                }
+            }
+
+            // Update status
+            const progressText = document.getElementById('download-progress');
+            if (progressText) progressText.textContent = 'Generando archivo ZIP...';
+
+            // Generate ZIP file
+            const zipBlob = await zip.generateAsync({
+                type: 'blob',
+                compression: 'DEFLATE',
+                compressionOptions: { level: 6 }
+            });
+
+            // Trigger download
+            const url = window.URL.createObjectURL(zipBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${propertyRef}_fotos.zip`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            logger.debug('✅ ZIP file downloaded successfully');
+            
+            // Show success message briefly
+            if (progressText) {
+                progressText.textContent = `✅ ¡Descarga completada! (${totalImages} fotos)`;
+                setTimeout(() => {
+                    document.body.removeChild(loadingOverlay);
+                }, 1500);
+            }
+        } catch (error) {
+            logger.error('❌ Error creating ZIP file:', error);
+            document.body.removeChild(loadingOverlay);
+            alert('Error al crear el archivo ZIP. Por favor, inténtalo de nuevo.');
+        }
+    }
+
+    // Load image as blob using a proxy approach through canvas
+    async loadImageAsBlob(imageUrl) {
+        return new Promise(async (resolve) => {
+            // Try multiple methods to load the image
+            
+            // Method 1: Try with CORS proxy
+            try {
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(imageUrl)}`;
+                const response = await fetch(proxyUrl);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    logger.debug('✅ Loaded image via CORS proxy');
+                    resolve(blob);
+                    return;
+                }
+            } catch (error) {
+                logger.debug('⚠️ CORS proxy method failed, trying alternative...');
+            }
+            
+            // Method 2: Try direct Image loading (may work even without proper CORS)
+            const img = new Image();
+            
+            img.onload = () => {
+                try {
+                    // Create canvas to convert image to blob
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth || img.width;
+                    canvas.height = img.naturalHeight || img.height;
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // Convert canvas to blob
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            logger.debug('✅ Loaded image via direct method');
+                            resolve(blob);
+                        } else {
+                            resolve(null);
+                        }
+                    }, 'image/jpeg', 0.95);
+                } catch (error) {
+                    logger.error('❌ Error converting image to blob:', error);
+                    resolve(null);
+                }
+            };
+            
+            img.onerror = async () => {
+                // Method 3: Try alternative CORS proxy
+                try {
+                    const altProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`;
+                    const response = await fetch(altProxyUrl);
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        logger.debug('✅ Loaded image via alternative proxy');
+                        resolve(blob);
+                        return;
+                    }
+                } catch (error) {
+                    logger.error('❌ All methods failed for image:', imageUrl);
+                    resolve(null);
+                }
+            };
+            
+            // Try to load the image directly first
+            img.crossOrigin = 'anonymous';
+            img.src = imageUrl;
+        });
     }
     // Change main image with performance optimization
     changeImage(direction) {
