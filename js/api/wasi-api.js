@@ -832,13 +832,43 @@ class WasiPropertyDetailController {
         // Check if JSZip is available
         if (typeof JSZip === 'undefined') {
             logger.error('❌ JSZip library not loaded');
-            alert('Error: Librería de compresión no disponible. Recarga la página.');
-            return;
+            
+            // Try to load JSZip dynamically as fallback
+            try {
+                await this.loadJSZipDynamically();
+                logger.debug('✅ JSZip loaded dynamically');
+            } catch (error) {
+                logger.error('❌ Failed to load JSZip dynamically:', error);
+                alert('Error: Librería de compresión no disponible. Por favor, recarga la página.\n\nSi el problema persiste, usa el botón de compartir para obtener el enlace y ábrelo en otro navegador.');
+                return;
+            }
         }
 
         await this.downloadAsZip();
 
         logger.debug('🎉 ZIP download process completed');
+    }
+
+    // Dynamically load JSZip if not available
+    loadJSZipDynamically() {
+        return new Promise((resolve, reject) => {
+            if (typeof JSZip !== 'undefined') {
+                resolve();
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+            script.onload = () => {
+                if (typeof JSZip !== 'undefined') {
+                    resolve();
+                } else {
+                    reject(new Error('JSZip failed to load'));
+                }
+            };
+            script.onerror = () => reject(new Error('Failed to load JSZip script'));
+            document.head.appendChild(script);
+        });
     }
 
     // Download images as ZIP file using image proxying through canvas
