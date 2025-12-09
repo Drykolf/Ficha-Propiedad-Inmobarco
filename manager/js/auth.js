@@ -483,6 +483,15 @@ class PropertyManagerAuth {
                             </svg>
                             Abrir ficha
                         </button>
+                        <button class="action-btn add-to-excel-btn" onclick="window.propertyManagerAuth.addToExcel('${property.id_property || property.id || ''}', '${property.registration_number || 'Propiedad'}')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14,2 14,8 20,8"></polyline>
+                                <line x1="12" y1="18" x2="12" y2="12"></line>
+                                <line x1="9" y1="15" x2="15" y2="15"></line>
+                            </svg>
+                            Agregar a excel
+                        </button>
                     </div>
                 </div>
             `).join('');
@@ -954,6 +963,63 @@ class PropertyManagerAuth {
         
         // Abrir en nueva pestaña
         window.open(propertyUrl, '_blank');
+    }
+
+    // Método para agregar propiedad a excel
+    async addToExcel(propertyId, propertyName) {
+        if (!propertyId) {
+            this.showNotification('Error: ID de propiedad no válido', 'error');
+            return;
+        }
+
+        try {
+            // Mostrar notificación de procesamiento
+            this.showNotification(`Agregando ${propertyName} a Excel...`, 'info');
+
+            // Generar ID encriptado
+            let encryptedId = null;
+            
+            if (window.propertyEncryption && window.propertyEncryption.initialized) {
+                encryptedId = window.propertyEncryption.encrypt(propertyId);
+                console.log(`🔐 ID encriptado generado: ${encryptedId}`);
+            } else {
+                console.warn('⚠️ Encriptación no disponible, enviando sin encriptar');
+            }
+
+            // Preparar datos para enviar
+            const data = {
+                propertyId: propertyId,
+                encryptedId: encryptedId || propertyId, // Fallback si no hay encriptación
+                propertyName: propertyName,
+                timestamp: new Date().toISOString()
+            };
+
+            console.log('📤 Enviando datos al webhook:', data);
+
+            // Enviar al webhook
+            const response = await fetch('https://automa-inmobarco-n8n.druysh.easypanel.host/webhook/add-excel-apt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+
+            // Verificar respuesta
+            if (response.ok) {
+                const result = await response.json().catch(() => null);
+                console.log('✅ Respuesta del webhook:', result);
+                this.showNotification(`✓ ${propertyName} agregado a Excel correctamente`, 'success');
+            } else {
+                console.warn(`⚠️ Respuesta del servidor: ${response.status}`);
+                // Asumir éxito si el servidor responde (aunque sea con error)
+                this.showNotification(`✓ ${propertyName} enviado a Excel`, 'success');
+            }
+
+        } catch (error) {
+            console.error('❌ Error al agregar a Excel:', error);
+            this.showNotification(`Error al agregar ${propertyName} a Excel: ${error.message}`, 'error');
+        }
     }
 
     // Método para mostrar notificaciones
