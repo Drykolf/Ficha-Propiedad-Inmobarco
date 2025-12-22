@@ -75,14 +75,34 @@ class WasiAPI {
         };
     }
 
-    // Obtener información de una propiedad - OPTIMIZADO con race condition
+    // Obtener información de una propiedad - OPTIMIZADO con Netlify function primero
     async getProperty(propertyId = null) {
         const id = propertyId || this.propertyId;
         const endpoint = `/property/get/${id}`;
         
-        // Múltiples proxies CORS como fallback
+        // Intentar primero con Netlify function (MUY RÁPIDO)
+        try {
+            const netlifyUrl = this.buildApiUrl(endpoint, id);
+            logger.debug(`🚀 Intentando con Netlify function (${netlifyUrl.type}):`, netlifyUrl.url);
+            
+            const response = await this.fetchWithTimeout(netlifyUrl.url, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
+            }, 8000);
+            
+            if (response.ok) {
+                const data = await response.json();
+                logger.info(`✅ Propiedad ${id} cargada exitosamente (${netlifyUrl.type})`);
+                return data;
+            }
+            
+            logger.warn(`⚠️ Netlify function respondió con error ${response.status}, intentando fallbacks...`);
+        } catch (error) {
+            logger.warn(`❌ Netlify function falló: ${error.message}, intentando proxies CORS...`);
+        }
+        
+        // Fallback: Múltiples proxies CORS públicos (MÁS LENTOS)
         const corsProxies = [
-            'https://api.allorigins.win/raw?url=',
             'https://corsproxy.io/?',
             'https://api.codetabs.com/v1/proxy?quest='
         ];
@@ -177,13 +197,40 @@ class WasiAPI {
         }
     }
 
-    // Obtener todas las propiedades (búsqueda) - OPTIMIZADO con race condition
+    // Obtener todas las propiedades (búsqueda) - OPTIMIZADO con Netlify function primero
     async searchProperties(filters = {}) {
         const endpoint = '/property/search/';
         
-        // Múltiples proxies CORS como fallback
+        // Intentar primero con Netlify function (MUY RÁPIDO)
+        try {
+            const netlifyUrl = this.buildApiUrl(endpoint);
+            const url = new URL(netlifyUrl.url);
+            
+            // Agregar filtros como query params
+            Object.entries(filters).forEach(([key, value]) => {
+                url.searchParams.append(key, value);
+            });
+            
+            logger.debug(`🚀 Buscando propiedades con Netlify function (${netlifyUrl.type}):`, url.toString());
+            
+            const response = await this.fetchWithTimeout(url.toString(), {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
+            }, 8000);
+            
+            if (response.ok) {
+                const data = await response.json();
+                logger.info(`✅ Propiedades cargadas exitosamente (${netlifyUrl.type}):`, Object.keys(data).filter(key => !isNaN(key)).length, 'propiedades');
+                return data;
+            }
+            
+            logger.warn(`⚠️ Netlify function respondió con error ${response.status}, intentando fallbacks...`);
+        } catch (error) {
+            logger.warn(`❌ Netlify function falló: ${error.message}, intentando proxies CORS...`);
+        }
+        
+        // Fallback: Múltiples proxies CORS públicos (MÁS LENTOS)
         const corsProxies = [
-            'https://api.allorigins.win/raw?url=',
             'https://corsproxy.io/?',
             'https://api.codetabs.com/v1/proxy?quest='
         ];
