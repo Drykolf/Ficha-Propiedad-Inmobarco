@@ -75,98 +75,109 @@ class WasiAPI {
         };
     }
 
-    // Obtener información de una propiedad con fallback de métodos
+    // Obtener información de una propiedad - OPTIMIZADO con race condition
     async getProperty(propertyId = null) {
         const id = propertyId || this.propertyId;
         const endpoint = `/property/get/${id}`;
         
-        // Múltiples proxies CORS como fallback (igual que searchProperties)
+        // Múltiples proxies CORS como fallback
         const corsProxies = [
             'https://api.allorigins.win/raw?url=',
             'https://corsproxy.io/?',
-            'https://cors-anywhere.herokuapp.com/',
             'https://api.codetabs.com/v1/proxy?quest='
         ];
         
-        // Usar el mismo sistema de fallback que searchProperties
-        const methods = [];
+        // Construir URL directa
+        const directUrl = this.buildDirectUrl(endpoint);
+        const url = new URL(directUrl.url);
         
-        // Generar métodos para cada proxy CORS
-        corsProxies.forEach((corsProxy, index) => {
-            methods.push(() => {
-                const directUrl = this.buildDirectUrl(endpoint);
-                const url = new URL(directUrl.url);
-                
-                // Para getProperty, añadir el ID de propiedad si no está en el endpoint
-                if (id && !endpoint.includes(id)) {
-                    url.searchParams.append('property_id', id);
-                }
-                
-                return { 
-                    url: corsProxy + encodeURIComponent(url.toString()), 
-                    type: `cors-proxy-${index + 1}`,
-                    options: {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'application/json'
-                        }
+        // Para getProperty, añadir el ID de propiedad si no está en el endpoint
+        if (id && !endpoint.includes(id)) {
+            url.searchParams.append('property_id', id);
+        }
+        
+        const targetUrl = url.toString();
+        
+        // Crear promesas para todos los proxies en paralelo
+        const proxyPromises = corsProxies.map((corsProxy, index) => {
+            const proxyUrl = corsProxy + encodeURIComponent(targetUrl);
+            const type = `cors-proxy-${index + 1}`;
+            
+            return this.fetchWithTimeout(proxyUrl, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
+            }, 5000)
+                .then(async (response) => {
+                    logger.debug(`✅ Respuesta método ${type}:`, response.status);
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(`HTTP ${response.status}: ${errorData.error || response.statusText}`);
                     }
-                };
-            });
+                    
+                    const data = await response.json();
+                    logger.info(`✅ Propiedad ${id} cargada exitosamente (${type})`);
+                    return { success: true, data, type };
+                })
+                .catch((error) => {
+                    logger.warn(`❌ Método ${type} falló:`, error.message);
+                    return { success: false, error, type };
+                });
         });
         
-        // Método directo (probablemente fallará por CORS)
-        methods.push(() => {
-            const url = new URL(`${this.baseUrl}${endpoint}`);
-            url.searchParams.append('id_company', this.companyId);
-            url.searchParams.append('wasi_token', this.token);
+        logger.debug(`🔄 Obteniendo propiedad ${id} usando múltiples proxies en paralelo...`);
+        
+        // Esperar a que el primero tenga éxito
+        const results = await Promise.all(proxyPromises);
+        
+        // Buscar el primer resultado exitoso
+        const successResult = results.find(r => r.success);
+        
+        if (successResult) {
+            return successResult.data;
+        }
+        
+        // Si todos fallaron, intentar método directo como último recurso
+        try {
+            logger.debug('🔄 Intentando método directo como último recurso...');
+            const response = await this.fetchWithTimeout(targetUrl, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
+            }, 5000);
             
-            // Para getProperty, añadir el ID de propiedad si no está en el endpoint
-            if (id && !endpoint.includes(id)) {
-                url.searchParams.append('property_id', id);
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(`HTTP ${response.status}: ${errorData.error || response.statusText}`);
             }
             
-            return {
-                url: url.toString(),
-                type: 'direct',
-                options: {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                }
-            };
-        });
-
-        for (let i = 0; i < methods.length; i++) {
-            try {
-                const { url, type, options } = methods[i]();
-                logger.debug(`🔄 Obteniendo propiedad ${id} - Método ${i + 1} (${type}):`, url);
-                
-                const response = await fetch(url, options);
-                logger.debug(`✅ Respuesta método ${type}:`, response.status, response.statusText);
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(`HTTP ${response.status}: ${errorData.error || response.statusText}`);
-                }
-
-                const data = await response.json();
-                logger.info(`✅ Propiedad ${id} cargada exitosamente`);
-                return data;
-                
-            } catch (error) {
-                logger.warn(`❌ Método ${i + 1} (${methods[i]().type}) falló:`, error.message);
-
-                if (i === methods.length - 1) {
-                    throw new Error(`Todos los métodos fallaron para obtener la propiedad ${id}. Último error: ${error.message}`);
-                }
-                continue;
-            }
+            const data = await response.json();
+            logger.info(`✅ Propiedad ${id} cargada exitosamente (directo)`);
+            return data;
+        } catch (error) {
+            logger.error('❌ Método directo también falló:', error.message);
+            throw new Error(`Todos los métodos fallaron para obtener la propiedad ${id}. Último error: ${error.message}`);
         }
     }
 
-    // Obtener todas las propiedades (búsqueda)
+    // Función helper para hacer fetch con timeout
+    async fetchWithTimeout(url, options = {}, timeout = 5000) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        try {
+            const response = await fetch(url, {
+                ...options,
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            return response;
+        } catch (error) {
+            clearTimeout(timeoutId);
+            throw error;
+        }
+    }
+
+    // Obtener todas las propiedades (búsqueda) - OPTIMIZADO con race condition
     async searchProperties(filters = {}) {
         const endpoint = '/property/search/';
         
@@ -174,84 +185,78 @@ class WasiAPI {
         const corsProxies = [
             'https://api.allorigins.win/raw?url=',
             'https://corsproxy.io/?',
-            'https://cors-anywhere.herokuapp.com/',
             'https://api.codetabs.com/v1/proxy?quest='
         ];
         
-        // Usar el mismo sistema de fallback que getProperty pero con múltiples CORS proxies
-        const methods = [];
+        // Construir URL directa
+        const directUrl = this.buildDirectUrl(endpoint);
+        const url = new URL(directUrl.url);
         
-        // Generar métodos para cada proxy CORS
-        corsProxies.forEach((corsProxy, index) => {
-            methods.push(() => {
-                const directUrl = this.buildDirectUrl(endpoint);
-                const url = new URL(directUrl.url);
-                
-                // Agregar filtros a la URL directa
-                Object.entries(filters).forEach(([key, value]) => {
-                    url.searchParams.append(key, value);
+        // Agregar filtros a la URL directa
+        Object.entries(filters).forEach(([key, value]) => {
+            url.searchParams.append(key, value);
+        });
+        
+        const targetUrl = url.toString();
+        
+        // Crear promesas para todos los proxies en paralelo
+        const proxyPromises = corsProxies.map((corsProxy, index) => {
+            const proxyUrl = corsProxy + encodeURIComponent(targetUrl);
+            const type = `cors-proxy-${index + 1}`;
+            
+            return this.fetchWithTimeout(proxyUrl, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
+            }, 5000)
+                .then(async (response) => {
+                    logger.debug(`✅ Respuesta método ${type}:`, response.status);
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(`HTTP ${response.status}: ${errorData.error || response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    logger.info(`✅ Propiedades cargadas exitosamente (${type}):`, Object.keys(data).filter(key => !isNaN(key)).length, 'propiedades');
+                    return { success: true, data, type };
+                })
+                .catch((error) => {
+                    logger.warn(`❌ Método ${type} falló:`, error.message);
+                    return { success: false, error, type };
                 });
-                
-                return { 
-                    url: corsProxy + encodeURIComponent(url.toString()), 
-                    type: `cors-proxy-${index + 1}`,
-                    options: {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'application/json'
-                        }
-                    }
-                };
-            });
         });
         
-        // Método directo (probablemente fallará por CORS)
-        methods.push(() => {
-            const url = new URL(`${this.baseUrl}${endpoint}`);
-            url.searchParams.append('id_company', this.companyId);
-            url.searchParams.append('wasi_token', this.token);
+        logger.debug('🔄 Buscando propiedades usando múltiples proxies en paralelo...');
+        
+        // Esperar a que el primero tenga éxito usando Promise.all
+        const results = await Promise.all(proxyPromises);
+        
+        // Buscar el primer resultado exitoso
+        const successResult = results.find(r => r.success);
+        
+        if (successResult) {
+            return successResult.data;
+        }
+        
+        // Si todos fallaron, intentar método directo como último recurso
+        try {
+            logger.debug('🔄 Intentando método directo como último recurso...');
+            const response = await this.fetchWithTimeout(targetUrl, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
+            }, 5000);
             
-            Object.entries(filters).forEach(([key, value]) => {
-                url.searchParams.append(key, value);
-            });
-            
-            return {
-                url: url.toString(),
-                type: 'direct',
-                options: {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                }
-            };
-        });
-
-        for (let i = 0; i < methods.length; i++) {
-            try {
-                const { url, type, options } = methods[i]();
-                logger.debug(`🔄 Buscando propiedades - Método ${i + 1} (${type}):`, url);
-                
-                const response = await fetch(url, options);
-                logger.debug(`✅ Respuesta método ${type}:`, response.status, response.statusText);
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(`HTTP ${response.status}: ${errorData.error || response.statusText}`);
-                }
-
-                const data = await response.json();
-                logger.info('✅ Propiedades cargadas exitosamente:', Object.keys(data).filter(key => !isNaN(key)).length, 'propiedades');
-                return data;
-                
-            } catch (error) {
-                logger.warn(`❌ Método ${i + 1} (${methods[i]().type}) falló:`, error.message);
-
-                if (i === methods.length - 1) {
-                    throw new Error(`Todos los métodos fallaron para buscar propiedades. Último error: ${error.message}`);
-                }
-                continue;
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(`HTTP ${response.status}: ${errorData.error || response.statusText}`);
             }
+            
+            const data = await response.json();
+            logger.info('✅ Propiedades cargadas exitosamente (directo):', Object.keys(data).filter(key => !isNaN(key)).length, 'propiedades');
+            return data;
+        } catch (error) {
+            logger.error('❌ Método directo también falló:', error.message);
+            throw new Error(`Todos los métodos fallaron para buscar propiedades. Último error: ${error.message}`);
         }
     }
 }

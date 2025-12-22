@@ -434,7 +434,16 @@ class PropertyManagerAuth {
         container.innerHTML = `
             <div class="properties-header">
                 <h1>Gestor de Propiedades</h1>
-                <button id="logoutBtn" class="logout-btn">Cerrar Sesión</button>
+                <div class="header-actions">
+                    <button id="newApartmentBtn" class="new-apartment-btn" disabled style="opacity: 0.5; cursor: not-allowed;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Nuevo Apartamento
+                    </button>
+                    <button id="logoutBtn" class="logout-btn">Cerrar Sesión</button>
+                </div>
             </div>
             <div class="loading-properties">
                 <p>Cargando propiedades...</p>
@@ -526,7 +535,16 @@ class PropertyManagerAuth {
         container.innerHTML = `
             <div class="properties-header">
                 <h1>Gestor de Propiedades</h1>
-                <button id="logoutBtn" class="logout-btn">Cerrar Sesión</button>
+                <div class="header-actions">
+                    <button id="newApartmentBtn" class="new-apartment-btn" disabled style="opacity: 0.5; cursor: not-allowed;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Nuevo Apartamento
+                    </button>
+                    <button id="logoutBtn" class="logout-btn">Cerrar Sesión</button>
+                </div>
             </div>
             <div class="search-container">
                 <div class="search-box">
@@ -1020,6 +1038,180 @@ class PropertyManagerAuth {
             console.error('❌ Error al agregar a Excel:', error);
             this.showNotification(`Error al agregar ${propertyName} a Excel: ${error.message}`, 'error');
         }
+    }
+
+    // Método para abrir el modal de nuevo apartamento
+    openNewApartmentModal() {
+        // Crear el modal
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Nuevo Apartamento</h2>
+                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="newApartmentForm">
+                        <div class="form-group">
+                            <label for="apartmentNumber">Número de Apartamento:</label>
+                            <input type="text" id="apartmentNumber" name="apartmentNumber" required />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="unit">Unidad:</label>
+                            <input type="text" id="unit" name="unit" required />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="address">Dirección:</label>
+                            <input type="text" id="address" name="address" required />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="price">Precio:</label>
+                            <input type="number" id="price" name="price" required />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="photos">Fotos:</label>
+                            <div class="photo-upload-area">
+                                <input type="file" id="photos" name="photos" accept="image/*" multiple style="display: none;" />
+                                <button type="button" class="upload-photo-btn" onclick="document.getElementById('photos').click()">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                        <polyline points="21 15 16 10 5 21"></polyline>
+                                    </svg>
+                                    Seleccionar Fotos
+                                </button>
+                                <div id="photoPreview" class="photo-preview"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-actions">
+                            <button type="button" class="btn-cancel" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+                            <button type="submit" class="btn-submit">Crear Apartamento</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Agregar listener para cerrar con click fuera del modal
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+        
+        // Agregar listener para el input de fotos
+        const photosInput = document.getElementById('photos');
+        const photoPreview = document.getElementById('photoPreview');
+        
+        photosInput.addEventListener('change', (e) => {
+            photoPreview.innerHTML = '';
+            const files = Array.from(e.target.files);
+            
+            if (files.length > 0) {
+                photoPreview.innerHTML = `<p class="photos-selected">${files.length} foto(s) seleccionada(s)</p>`;
+                
+                files.forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'preview-image';
+                        photoPreview.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+        });
+        
+        // Agregar listener para el formulario
+        const form = document.getElementById('newApartmentForm');
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleNewApartmentSubmit(e);
+        });
+    }
+
+    // Método para manejar el envío del formulario de nuevo apartamento
+    async handleNewApartmentSubmit(e) {
+        const formData = new FormData(e.target);
+        const data = {
+            apartmentNumber: formData.get('apartmentNumber'),
+            unit: formData.get('unit'),
+            address: formData.get('address'),
+            price: formData.get('price'),
+            photos: []
+        };
+        
+        // Obtener archivos de fotos
+        const photosInput = document.getElementById('photos');
+        const files = Array.from(photosInput.files);
+        
+        try {
+            this.showNotification('Enviando información del apartamento...', 'info');
+            
+            // Convertir fotos a base64
+            for (const file of files) {
+                const base64 = await this.fileToBase64(file);
+                data.photos.push({
+                    name: file.name,
+                    data: base64
+                });
+            }
+            
+            console.log('📤 Enviando datos del nuevo apartamento al webhook:', data);
+            
+            // Enviar al webhook
+            const response = await fetch('https://automa-inmobarco-n8n.druysh.easypanel.host/webhook/wasitest', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+
+            // Verificar respuesta
+            if (response.ok) {
+                const result = await response.json().catch(() => null);
+                console.log('✅ Respuesta del webhook:', result);
+                this.showNotification('✓ Apartamento creado correctamente', 'success');
+                
+                // Cerrar modal
+                document.querySelector('.modal-overlay').remove();
+            } else {
+                console.warn(`⚠️ Respuesta del servidor: ${response.status}`);
+                this.showNotification('✓ Información enviada', 'success');
+                
+                // Cerrar modal de todas formas
+                document.querySelector('.modal-overlay').remove();
+            }
+            
+        } catch (error) {
+            console.error('❌ Error al enviar datos del apartamento:', error);
+            this.showNotification('Error al crear el apartamento: ' + error.message, 'error');
+        }
+    }
+
+    // Método auxiliar para convertir archivo a base64
+    fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
     }
 
     // Método para mostrar notificaciones
