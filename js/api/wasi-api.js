@@ -306,6 +306,7 @@ class WasiPropertyDetailController {
                 ${this.renderPropertyDescription(property)}
                 ${this.renderPropertyCharacteristics(property)}
                 ${this.renderPropertyMap(property)}
+                ${this.renderNearbyPlaces(property)}
 
                 </div>
             </div>
@@ -324,6 +325,9 @@ class WasiPropertyDetailController {
 
         // Initialize map if coordinates are available
         this.initializeMap(property);
+        
+        // Initialize nearby places
+        this.initializeNearbyPlaces(property);
         
         // Add resize listener to update thumbnails on orientation change
         this.handleResize = this.debounce(() => {
@@ -676,10 +680,259 @@ class WasiPropertyDetailController {
                         <span class="location-icon">📍</span>
                         <span>${property.zone_label}, ${property.city_label}</span>
                     </div>
+
                 </div>
             </div>
         `;
     }
+
+    // Render nearby places section
+    renderNearbyPlaces(property) {
+        // Check if coordinates are available
+        if (!property.map) {
+            return '';
+        }
+
+        let lat, lng;
+
+        // Handle different coordinate formats
+        if (typeof property.map === 'string') {
+            const coords = property.map.split(',');
+            if (coords.length !== 2) {
+                return '';
+            }
+            lat = parseFloat(coords[0]);
+            lng = parseFloat(coords[1]);
+        } else if (property.map.latitude && property.map.longitude) {
+            lat = parseFloat(property.map.latitude);
+            lng = parseFloat(property.map.longitude);
+        } else {
+            return '';
+        }
+
+        // Validate coordinates
+        if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) {
+            return '';
+        }
+
+        return `
+            <div class="nearby-places" id="nearby-places-section">
+                <h2 class="nearby-places-title">Lugares Cercanos</h2>
+                <div class="nearby-places-content" id="nearby-places-content">
+                    <div class="nearby-places-loading">
+                        <span class="loading-spinner"></span>
+                        Buscando lugares cercanos...
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Initialize nearby places
+    initializeNearbyPlaces(property) {
+        const nearbyContainer = document.getElementById('nearby-places-content');
+        if (!nearbyContainer || !property.map) return;
+
+        let lat, lng;
+
+        // Handle different coordinate formats
+        if (typeof property.map === 'string') {
+            const coords = property.map.split(',');
+            if (coords.length !== 2) return;
+            lat = parseFloat(coords[0]);
+            lng = parseFloat(coords[1]);
+        } else if (property.map.latitude && property.map.longitude) {
+            lat = parseFloat(property.map.latitude);
+            lng = parseFloat(property.map.longitude);
+        } else {
+            return;
+        }
+
+        if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return;
+
+        // Use intersection observer for lazy loading
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    this.fetchNearbyPlaces(lat, lng, nearbyContainer);
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        observer.observe(nearbyContainer);
+    }
+
+    // Fetch nearby places using Overpass API
+    async fetchNearbyPlaces(lat, lng, container) {
+        try {
+            // Search radius in meters
+            const radius = 1000;
+            
+            // Overpass API query for popular places (amenities, shops, etc.)
+            const query = `
+                [out:json][timeout:25];
+                (
+                    node["amenity"~"restaurant|cafe|bank|pharmacy|hospital|school|university|supermarket|shopping_mall"](around:${radius},${lat},${lng});
+                    node["shop"~"supermarket|mall|convenience"](around:${radius},${lat},${lng});
+                    node["leisure"~"park|fitness_centre|sports_centre"](around:${radius},${lat},${lng});
+                    node["tourism"~"museum|attraction|hotel"](around:${radius},${lat},${lng});
+                );
+                out body 10;
+            `;
+
+            const response = await fetch('https://overpass-api.de/api/interpreter', {
+                method: 'POST',
+                body: `data=${encodeURIComponent(query)}`,
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch nearby places');
+            }
+
+            const data = await response.json();
+            const places = this.processNearbyPlaces(data.elements, lat, lng);
+            
+            // Show places (one per category type, max 4)
+            this.renderNearbyPlacesList(places, container);
+
+        } catch (error) {
+            logger.error('Error fetching nearby places:', error);
+            container.innerHTML = `
+                <div class="nearby-places-error">
+                    <span class="error-icon">⚠️</span>
+                    No se pudieron cargar los lugares cercanos
+                </div>
+            `;
+        }
+    }
+
+    // Process and sort nearby places - one per category type
+    processNearbyPlaces(elements, originLat, originLng) {
+        const places = elements
+            .filter(el => el.tags && el.tags.name)
+            .map(el => {
+                const distance = this.calculateDistance(originLat, originLng, el.lat, el.lon);
+                const category = this.getCategoryInfo(el.tags);
+                
+                return {
+                    name: el.tags.name,
+                    category: category.name,
+                    categoryType: category.type, // amenity, shop, leisure, tourism
+                    icon: category.icon,
+                    distance: distance,
+                    distanceLabel: distance < 1000 ? `${Math.round(distance)} m` : `${(distance / 1000).toFixed(1)} km`
+                };
+            })
+            .sort((a, b) => a.distance - b.distance);
+
+        // Select one place per category type (amenity, shop, leisure, tourism)
+        const selectedPlaces = [];
+        const usedCategoryTypes = new Set();
+
+        for (const place of places) {
+            if (!usedCategoryTypes.has(place.categoryType)) {
+                selectedPlaces.push(place);
+                usedCategoryTypes.add(place.categoryType);
+            }
+            // Stop when we have 4 places (one per category type)
+            if (selectedPlaces.length >= 4) break;
+        }
+
+        return selectedPlaces;
+    }
+
+    // Calculate distance between two coordinates (Haversine formula)
+    calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371000; // Earth's radius in meters
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    // Get category info based on tags
+    getCategoryInfo(tags) {
+        const categories = {
+            // Amenities
+            'restaurant': { name: 'Restaurante', icon: '🍽️', type: 'amenity' },
+            'cafe': { name: 'Café', icon: '☕', type: 'amenity' },
+            'bank': { name: 'Banco', icon: '🏦', type: 'amenity' },
+            'pharmacy': { name: 'Farmacia', icon: '💊', type: 'amenity' },
+            'hospital': { name: 'Hospital', icon: '🏥', type: 'amenity' },
+            'school': { name: 'Colegio', icon: '🏫', type: 'amenity' },
+            'university': { name: 'Universidad', icon: '🎓', type: 'amenity' },
+            'supermarket': { name: 'Supermercado', icon: '🛒', type: 'amenity' },
+            'shopping_mall': { name: 'Centro Comercial', icon: '🏬', type: 'amenity' },
+            // Shops
+            'mall': { name: 'Centro Comercial', icon: '🏬', type: 'shop' },
+            'convenience': { name: 'Tienda', icon: '🏪', type: 'shop' },
+            // Leisure
+            'park': { name: 'Parque', icon: '🌳', type: 'leisure' },
+            'fitness_centre': { name: 'Gimnasio', icon: '💪', type: 'leisure' },
+            'sports_centre': { name: 'Centro Deportivo', icon: '⚽', type: 'leisure' },
+            // Tourism
+            'museum': { name: 'Museo', icon: '🏛️', type: 'tourism' },
+            'attraction': { name: 'Atracción', icon: '🎡', type: 'tourism' },
+            'hotel': { name: 'Hotel', icon: '🏨', type: 'tourism' }
+        };
+
+        // Check amenity first
+        if (tags.amenity && categories[tags.amenity]) {
+            return categories[tags.amenity];
+        }
+        // Check shop
+        if (tags.shop && categories[tags.shop]) {
+            return categories[tags.shop];
+        }
+        // Check leisure
+        if (tags.leisure && categories[tags.leisure]) {
+            return categories[tags.leisure];
+        }
+        // Check tourism
+        if (tags.tourism && categories[tags.tourism]) {
+            return categories[tags.tourism];
+        }
+
+        return { name: 'Lugar', icon: '📍', type: 'other' };
+    }
+
+    // Render the nearby places list
+    renderNearbyPlacesList(places, container) {
+        if (places.length === 0) {
+            container.innerHTML = `
+                <div class="nearby-places-empty">
+                    <span class="empty-icon">🔍</span>
+                    No se encontraron lugares cercanos
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = `
+            <ul class="nearby-places-list">
+                ${places.map(place => `
+                    <li class="nearby-place-item">
+                        <div class="place-icon">${place.icon}</div>
+                        <div class="place-info">
+                            <span class="place-name">${place.name}</span>
+                            <span class="place-category">${place.category}</span>
+                        </div>
+                        <div class="place-distance">
+                            <span class="distance-value">${place.distanceLabel}</span>
+                        </div>
+                    </li>
+                `).join('')}
+            </ul>
+        `;
+    }
+
     // Render property code section for agents
     renderPropertyCode(property) {
         if (!property.id_property) return '';
