@@ -306,7 +306,6 @@ class WasiPropertyDetailController {
                 ${this.renderPropertyDescription(property)}
                 ${this.renderPropertyCharacteristics(property)}
                 ${this.renderPropertyMap(property)}
-                ${this.renderNearbyPlaces(property)}
 
                 </div>
             </div>
@@ -671,7 +670,50 @@ class WasiPropertyDetailController {
 
         return `
             <div class="property-map">
-                <h2 class="map-title">Ubicación</h2>
+                <h2 class="map-title">Acerca del barrio</h2>
+                
+                <!-- Búsqueda de lugares cercanos -->
+                <div class="location-search-container">
+                    <div class="search-input-wrapper">
+                        <span class="search-icon">🔍</span>
+                        <input 
+                            type="text" 
+                            id="location-search-input" 
+                            class="location-search-input" 
+                            placeholder="Buscar lugar (ej: Centro Comercial, Estación Metro...)"
+                            autocomplete="off"
+                        >
+                        <button id="clear-search-btn" class="clear-search-btn" style="display: none;">×</button>
+                    </div>
+                    <div id="search-suggestions" class="search-suggestions"></div>
+                    
+                    <!-- Resultados de tiempo de viaje -->
+                    <div id="travel-time-results" class="travel-time-results" style="display: none;">
+                        <div class="travel-time-header">
+                            <span id="destination-name" class="destination-name"></span>
+                            <button id="close-travel-results" class="close-travel-results">×</button>
+                        </div>
+                        <div class="travel-modes">
+                            <div class="travel-mode walking">
+                                <span class="mode-icon">🚶</span>
+                                <div class="mode-info">
+                                    <span class="mode-label">A pie</span>
+                                    <span id="walking-time" class="mode-time">--</span>
+                                    <span id="walking-distance" class="mode-distance"></span>
+                                </div>
+                            </div>
+                            <div class="travel-mode driving">
+                                <span class="mode-icon">🚗</span>
+                                <div class="mode-info">
+                                    <span class="mode-label">En carro</span>
+                                    <span id="driving-time" class="mode-time">--</span>
+                                    <span id="driving-distance" class="mode-distance"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div id="property-map-container" class="map-container" data-lat="${lat}" data-lng="${lng}" data-address="${property.barrio}, ${property.municipio}">
                     <div class="map-loading">Cargando mapa...</div>
                 </div>
@@ -1696,12 +1738,447 @@ class WasiPropertyDetailController {
         }).addTo(map);
 
         // Add circle instead of marker for privacy
-        L.circle([displayCoords.lat, displayCoords.lng], {
+        const propertyCircle = L.circle([displayCoords.lat, displayCoords.lng], {
             color: '#1B99D3',
             fillColor: '#48BFF7',
             fillOpacity: 0.2,
             radius: 200
         }).addTo(map);
+
+        // Store map reference and coordinates for location search
+        this.map = map;
+        this.propertyCoords = displayCoords;
+        this.searchMarker = null;
+
+        // Initialize location search functionality
+        this.initializeLocationSearch();
+    }
+
+    // Initialize location search with autocomplete
+    initializeLocationSearch() {
+        const searchInput = document.getElementById('location-search-input');
+        const suggestionsContainer = document.getElementById('search-suggestions');
+        const clearBtn = document.getElementById('clear-search-btn');
+        const closeResultsBtn = document.getElementById('close-travel-results');
+
+        if (!searchInput) return;
+
+        let debounceTimer = null;
+
+        // Search input handler with debounce
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            
+            // Show/hide clear button
+            clearBtn.style.display = query.length > 0 ? 'flex' : 'none';
+
+            if (debounceTimer) clearTimeout(debounceTimer);
+
+            if (query.length < 3) {
+                suggestionsContainer.innerHTML = '';
+                suggestionsContainer.style.display = 'none';
+                return;
+            }
+
+            debounceTimer = setTimeout(() => {
+                this.searchPlaces(query);
+            }, 300);
+        });
+
+        // Clear button handler
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearBtn.style.display = 'none';
+            suggestionsContainer.innerHTML = '';
+            suggestionsContainer.style.display = 'none';
+            this.clearSearchResults();
+        });
+
+        // Close travel results handler
+        if (closeResultsBtn) {
+            closeResultsBtn.addEventListener('click', () => {
+                this.clearSearchResults();
+            });
+        }
+
+        // Close suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.location-search-container')) {
+                suggestionsContainer.style.display = 'none';
+            }
+        });
+
+        // Handle Enter key
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const firstSuggestion = suggestionsContainer.querySelector('.suggestion-item');
+                if (firstSuggestion) {
+                    firstSuggestion.click();
+                }
+            }
+        });
+    }
+
+    // Search places using Photon (better autocomplete than Nominatim)
+    async searchPlaces(query) {
+        const suggestionsContainer = document.getElementById('search-suggestions');
+        
+        try {
+            // Use property coordinates for location bias (better local results)
+            const lat = this.propertyCoords?.lat || 6.2442;
+            const lon = this.propertyCoords?.lng || -75.5812;
+            
+            // Photon API with location bias for better local results
+            // Note: Photon only supports: default, en, de, fr (not es)
+            const response = await fetch(
+                `https://photon.komoot.io/api/?` + 
+                `q=${encodeURIComponent(query)}&lat=${lat}&lon=${lon}&limit=5&lang=default`
+            );
+
+            if (!response.ok) throw new Error('Search failed');
+
+            const data = await response.json();
+            this.displaySearchSuggestions(data.features || []);
+
+        } catch (error) {
+            logger.error('Error searching places:', error);
+            suggestionsContainer.innerHTML = `
+                <div class="suggestion-error">Error al buscar lugares</div>
+            `;
+            suggestionsContainer.style.display = 'block';
+        }
+    }
+
+    // Display search suggestions (Photon GeoJSON format)
+    displaySearchSuggestions(results) {
+        const suggestionsContainer = document.getElementById('search-suggestions');
+
+        // Filter results within 15km radius
+        const maxDistanceKm = 15;
+        const filteredResults = results.filter(feature => {
+            const coords = feature.geometry.coordinates; // [lon, lat]
+            const distanceMeters = this.calculateDistance(
+                this.propertyCoords.lat, 
+                this.propertyCoords.lng, 
+                coords[1], // lat
+                coords[0]  // lon
+            );
+            return distanceMeters <= maxDistanceKm * 1000; // Convert km to meters
+        });
+
+        if (filteredResults.length === 0) {
+            suggestionsContainer.innerHTML = `
+                <div class="suggestion-empty">No se encontraron resultados cercanos (máx. ${maxDistanceKm} km)</div>
+            `;
+            suggestionsContainer.style.display = 'block';
+            return;
+        }
+
+        suggestionsContainer.innerHTML = filteredResults.map(feature => {
+            const props = feature.properties;
+            const coords = feature.geometry.coordinates; // [lon, lat]
+            const icon = this.getPlaceSearchIcon(props.osm_value, props.osm_key);
+            const name = props.name || props.street || 'Sin nombre';
+            const shortAddress = this.formatPhotonAddress(props);
+            
+            // Calculate distance to show in suggestions
+            const distanceMeters = this.calculateDistance(
+                this.propertyCoords.lat, 
+                this.propertyCoords.lng, 
+                coords[1], 
+                coords[0]
+            );
+            const distanceLabel = distanceMeters < 1000 
+                ? `${Math.round(distanceMeters)} m` 
+                : `${(distanceMeters / 1000).toFixed(1)} km`;
+            
+            return `
+                <div class="suggestion-item" 
+                     data-lat="${coords[1]}" 
+                     data-lng="${coords[0]}"
+                     data-name="${name}">
+                    <span class="suggestion-icon">${icon}</span>
+                    <div class="suggestion-text">
+                        <span class="suggestion-name">${name}</span>
+                        <span class="suggestion-address">${shortAddress}</span>
+                    </div>
+                    <span class="suggestion-distance">${distanceLabel}</span>
+                </div>
+            `;
+        }).join('');
+
+        suggestionsContainer.style.display = 'block';
+
+        // Add click handlers to suggestions
+        suggestionsContainer.querySelectorAll('.suggestion-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const lat = parseFloat(item.dataset.lat);
+                const lng = parseFloat(item.dataset.lng);
+                const name = item.dataset.name;
+
+                this.selectPlace(lat, lng, name);
+                suggestionsContainer.style.display = 'none';
+                
+                // Update input with selected place name
+                const searchInput = document.getElementById('location-search-input');
+                if (searchInput) searchInput.value = name;
+            });
+        });
+    }
+
+    // Get icon based on place type for search (Photon osm_value and osm_key)
+    getPlaceSearchIcon(osmValue, osmKey) {
+        const icons = {
+            // Transport
+            'station': '🚇',
+            'subway': '🚇',
+            'subway_entrance': '🚇',
+            'bus_station': '🚌',
+            'bus_stop': '🚌',
+            'aerodrome': '✈️',
+            'airport': '✈️',
+            // Healthcare
+            'hospital': '🏥',
+            'clinic': '🏥',
+            'doctors': '🏥',
+            'pharmacy': '💊',
+            // Education
+            'school': '🏫',
+            'university': '🎓',
+            'college': '🎓',
+            'kindergarten': '🏫',
+            // Food & Drink
+            'restaurant': '🍽️',
+            'cafe': '☕',
+            'bar': '🍺',
+            'fast_food': '🍔',
+            'bakery': '🥐',
+            // Shopping
+            'supermarket': '🛒',
+            'mall': '🏬',
+            'shopping_centre': '🏬',
+            'marketplace': '🛒',
+            'convenience': '🏪',
+            'clothes': '👕',
+            // Services
+            'bank': '🏦',
+            'atm': '🏧',
+            'post_office': '📮',
+            // Leisure
+            'park': '🌳',
+            'garden': '🌳',
+            'playground': '🎠',
+            'sports_centre': '🏟️',
+            'gym': '💪',
+            'fitness_centre': '💪',
+            'swimming_pool': '🏊',
+            'cinema': '🎬',
+            'theatre': '🎭',
+            // Accommodation
+            'hotel': '🏨',
+            'hostel': '🏨',
+            'guest_house': '🏨',
+            // Culture
+            'museum': '🏛️',
+            'library': '📚',
+            'place_of_worship': '⛪',
+            'church': '⛪',
+            // Administrative
+            'city': '🏙️',
+            'town': '🏘️',
+            'village': '🏘️',
+            'neighbourhood': '🏘️',
+            'suburb': '🏘️',
+            'residential': '🏠',
+            'street': '🛣️',
+            'highway': '🛣️'
+        };
+
+        // Check osm_value first, then osm_key
+        return icons[osmValue] || icons[osmKey] || '📍';
+    }
+
+    // Format address from Photon properties
+    formatPhotonAddress(props) {
+        const parts = [];
+        
+        // Build address from available properties
+        if (props.street) parts.push(props.street);
+        if (props.district) parts.push(props.district);
+        if (props.locality) parts.push(props.locality);
+        if (props.city) parts.push(props.city);
+        if (props.state) parts.push(props.state);
+        
+        // Return first 2-3 meaningful parts
+        return parts.slice(0, 3).join(', ') || props.country || '';
+    }
+
+    // Select a place and calculate routes
+    async selectPlace(lat, lng, name) {
+        if (!this.map || !this.propertyCoords) {
+            logger.error('Map or property coordinates not available');
+            return;
+        }
+
+        logger.debug('Selecting place:', name, 'at', lat, lng);
+
+        // Add marker for selected place
+        if (this.searchMarker) {
+            this.map.removeLayer(this.searchMarker);
+        }
+
+        // Create custom red marker icon
+        const redIcon = L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        this.searchMarker = L.marker([lat, lng], { icon: redIcon })
+            .addTo(this.map)
+            .bindPopup(`<strong>${name}</strong>`)
+            .openPopup();
+
+        // Fit map to show both points
+        const bounds = L.latLngBounds([
+            [this.propertyCoords.lat, this.propertyCoords.lng],
+            [lat, lng]
+        ]);
+        this.map.fitBounds(bounds, { padding: [50, 50] });
+
+        // Calculate and display travel times
+        await this.calculateTravelTimes(lat, lng, name);
+    }
+
+    // Calculate travel times using OSRM
+    async calculateTravelTimes(destLat, destLng, destName) {
+        const travelResults = document.getElementById('travel-time-results');
+        const destinationNameEl = document.getElementById('destination-name');
+        const walkingTimeEl = document.getElementById('walking-time');
+        const walkingDistanceEl = document.getElementById('walking-distance');
+        const drivingTimeEl = document.getElementById('driving-time');
+        const drivingDistanceEl = document.getElementById('driving-distance');
+
+        if (!travelResults) return;
+
+        // Show loading state
+        travelResults.style.display = 'block';
+        destinationNameEl.textContent = destName;
+        walkingTimeEl.textContent = 'Calculando...';
+        drivingTimeEl.textContent = 'Calculando...';
+        walkingDistanceEl.textContent = '';
+        drivingDistanceEl.textContent = '';
+
+        const origin = `${this.propertyCoords.lng},${this.propertyCoords.lat}`;
+        const destination = `${destLng},${destLat}`;
+
+        try {
+            // Calculate driving time first (OSRM public server supports driving)
+            const drivingData = await this.getRouteFromOSRM(origin, destination, 'driving');
+            if (drivingData) {
+                drivingTimeEl.textContent = this.formatTravelDuration(drivingData.duration);
+                drivingDistanceEl.textContent = this.formatTravelDistance(drivingData.distance);
+            } else {
+                // Fallback: estimate driving time based on distance (30 km/h average in city)
+                const distanceMeters = this.calculateDistance(
+                    this.propertyCoords.lat, this.propertyCoords.lng,
+                    destLat, destLng
+                );
+                const drivingDistance = distanceMeters * 1.3; // Road distance multiplier
+                const drivingSeconds = (drivingDistance / 1000) * 2 * 60; // 30 km/h = 2 min/km
+                drivingTimeEl.textContent = this.formatTravelDuration(drivingSeconds);
+                drivingDistanceEl.textContent = this.formatTravelDistance(drivingDistance);
+            }
+
+            // Calculate walking time (estimate based on distance since OSRM public doesn't support walking well)
+            const distanceMeters = this.calculateDistance(
+                this.propertyCoords.lat, this.propertyCoords.lng,
+                destLat, destLng
+            );
+            // Walking estimate: ~5 km/h, with 1.3x multiplier for actual path vs straight line
+            const walkingDistance = distanceMeters * 1.3;
+            const walkingSeconds = (walkingDistance / 1000) * 12 * 60; // 5 km/h = 12 min per km
+            walkingTimeEl.textContent = this.formatTravelDuration(walkingSeconds);
+            walkingDistanceEl.textContent = this.formatTravelDistance(walkingDistance);
+
+        } catch (error) {
+            logger.error('Error calculating travel times:', error);
+            walkingTimeEl.textContent = 'Error';
+            drivingTimeEl.textContent = 'Error';
+        }
+    }
+
+    // Get route from OSRM (Open Source Routing Machine)
+    async getRouteFromOSRM(origin, destination, profile) {
+        try {
+            // OSRM public demo server only reliably supports 'driving' profile
+            const response = await fetch(
+                `https://router.project-osrm.org/route/v1/${profile}/${origin};${destination}?overview=false`
+            );
+
+            if (!response.ok) throw new Error('OSRM request failed');
+
+            const data = await response.json();
+
+            if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+                const route = data.routes[0];
+                logger.debug(`OSRM ${profile} route: ${route.duration}s, ${route.distance}m`);
+                return {
+                    duration: route.duration, // seconds
+                    distance: route.distance  // meters
+                };
+            }
+
+            return null;
+
+        } catch (error) {
+            logger.error(`Error getting ${profile} route:`, error);
+            return null;
+        }
+    }
+
+    // Clear all search results
+    clearSearchResults() {
+        const travelResults = document.getElementById('travel-time-results');
+        if (travelResults) {
+            travelResults.style.display = 'none';
+        }
+
+        if (this.searchMarker && this.map) {
+            this.map.removeLayer(this.searchMarker);
+            this.searchMarker = null;
+        }
+
+        // Reset map view to property
+        if (this.map && this.propertyCoords) {
+            this.map.setView([this.propertyCoords.lat, this.propertyCoords.lng], 16);
+        }
+    }
+
+    // Format duration
+    formatTravelDuration(seconds) {
+        if (!seconds || seconds <= 0) return 'N/A';
+
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.ceil((seconds % 3600) / 60);
+
+        if (hours > 0) {
+            return `${hours} h ${minutes} min`;
+        }
+        return `${minutes} min`;
+    }
+
+    // Format distance in human readable format
+    formatTravelDistance(meters) {
+        if (!meters || meters <= 0) return '';
+
+        if (meters < 1000) {
+            return `(${Math.round(meters)} m)`;
+        }
+        return `(${(meters / 1000).toFixed(1)} km)`;
     }
 
     // Show map error message
