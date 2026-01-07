@@ -1,4 +1,3 @@
-import { NubyPropertyDetailController } from "./api/arrendasoft-api.js";
 import { WasiPropertyDetailController } from "./api/wasi-api.js";
 
 
@@ -83,15 +82,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Store company configuration globally for contact methods
         window.companyConfig = config.company;
         let apiModule;
-        if (propertyId < 2000) {
-            logger.debug('✅ Using ArrendaSoft API for property ID:', propertyId);
-            apiModule = new NubyPropertyDetailController(config.api,propertyId);
-            await apiModule.init();
-        } else {
-            logger.debug('✅ Using WASI API for property ID:', propertyId);
-            apiModule = new WasiPropertyDetailController(config.wasi,propertyId);
-            await apiModule.init();
-        }
+        logger.debug('✅ Using WASI API for property ID:', propertyId);
+        apiModule = new WasiPropertyDetailController(config.wasi,propertyId);
+        await apiModule.init();
     } catch (error) {
         logger.error('❌ Error loading property:', error);
         let errorMessage = error.message;
