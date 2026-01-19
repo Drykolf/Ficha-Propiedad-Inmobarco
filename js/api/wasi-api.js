@@ -207,7 +207,7 @@ class WasiPropertyDetailController {
     }
 
     // Load property data
-    async loadProperty() {
+    async loadProperty() {  
         try {
             // Check if property data was preloaded by Netlify Function
             if (window.PRELOADED_PROPERTY) {
@@ -215,7 +215,7 @@ class WasiPropertyDetailController {
                 this.property = window.PRELOADED_PROPERTY;
                 
                 // Validate preloaded property status
-                if (parseInt(this.property.id_availability) !== 1 && ![1, 3].includes(parseInt(this.property.id_status_on_page))) {
+                if (parseInt(this.property.id_availability) !== 1 || ![1, 3].includes(parseInt(this.property.id_status_on_page))) {
                     logger.warn(`🚫 Preloaded property is not active. Status: ${this.property.estado_texto || 'Unknown'}`);
                     throw new Error('Property is not active or available');
                 }
@@ -232,12 +232,13 @@ class WasiPropertyDetailController {
 
             // Load property details
             this.property = await this.wasiApi.getProperty(this.propertyId);
-
             // Validate property status - only show active properties
-            if (parseInt(this.property.id_availability) !== 1 && ![1, 3].includes(parseInt(this.property.id_status_on_page))) {
+            if (parseInt(this.property.id_availability) !== 1 || ![1, 3].includes(parseInt(this.property.id_status_on_page))) {
                 logger.warn(`🚫 Property ${this.propertyId} is not active. Status: ${this.property.availability_label || 'Unknown'}`);
                 throw new Error('Property is not active or available');
             }
+            else {
+                logger.info(`✅ Property ${this.propertyId} is active and available.`);}
 
             this.renderProperty();
             this.updatePageMeta();
