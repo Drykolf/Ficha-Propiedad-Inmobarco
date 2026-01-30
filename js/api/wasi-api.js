@@ -233,7 +233,7 @@ class WasiPropertyDetailController {
             // Load property details
             this.property = await this.wasiApi.getProperty(this.propertyId);
             // Validate property status - only show active properties
-            if (parseInt(this.property.id_availability) !== 1 || ![1, 3].includes(parseInt(this.property.id_status_on_page))) {
+            if (parseInt(this.property.id_availability) !== 1 && ![1, 3].includes(parseInt(this.property.id_status_on_page))) {
                 logger.warn(`🚫 Property ${this.propertyId} is not active. Status: ${this.property.availability_label || 'Unknown'}`);
                 throw new Error('Property is not active or available');
             }
