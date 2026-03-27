@@ -1,43 +1,11 @@
 [build]
-  publish = "."
-  command = "echo 'Building Inmobarco Property Template...' && node build-env.js && echo 'Build completed - Static site ready with environment variables'"
-  functions = "netlify/functions"
+  command = "npm run build"
+  publish = ".output/public"
 
 [build.environment]
   NODE_VERSION = "18"
 
-# Static assets - serve files directly (NO redirects to functions)
-# These rules must come BEFORE the catch-all redirect
-
-# SSR redirects ONLY for HTML pages
-[[redirects]]
-  from = "/"
-  to = "/.netlify/functions/hello"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/index.html"
-  to = "/.netlify/functions/hello"
-  status = 200
-  force = true
-
-# Catch-all for HTML pages ONLY (exclude static assets)
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/hello"
-  status = 200
-  conditions = {path = "!/*.*"}
-
-# Cache headers for Netlify Functions
-[[headers]]
-  for = "/.netlify/functions/*"
-  [headers.values]
-    Cache-control = "public, max-age=300"
-    x-content-type-options = "nosniff"
-    x-prerendered = "netlify-function"
-
-# Security and performance headers for all pages
+# Security headers
 [[headers]]
   for = "/*"
   [headers.values]
@@ -46,42 +14,11 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
+# Static assets cache
 [[headers]]
-  for = "*.js"
+  for = "/_nuxt/*"
   [headers.values]
-    Cache-Control = "public, max-age=86400"
-    Content-Type = "application/javascript; charset=utf-8"
-
-[[headers]]
-  for = "*.css"
-  [headers.values]
-    Cache-Control = "public, max-age=86400"
-    Content-Type = "text/css; charset=utf-8"
-
-[[headers]]
-  for = "*.json"
-  [headers.values]
-    Cache-Control = "public, max-age=300"
-
-[[headers]]
-  for = "*.html"
-  [headers.values]
-    Cache-Control = "public, max-age=300"
-
-[[headers]]
-  for = "*.jpg"
-  [headers.values]
-    Cache-Control = "public, max-age=604800"
-
-[[headers]]
-  for = "*.png"
-  [headers.values]
-    Cache-Control = "public, max-age=604800"
-
-[[headers]]
-  for = "*.svg"
-  [headers.values]
-    Cache-Control = "public, max-age=604800"
+    Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
   for = "/assets/*"

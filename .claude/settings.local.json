@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /d/Inmobarco/Inmobarco-Proyectos/ficha-inmobarco log --oneline -20)",
+      "Bash(xargs grep:*)",
+      "Bash(rm -f build-env.js index.html)",
+      "Bash(rm -rf js/ css/ netlify/ data/wasi_data.js)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)"
+    ]
+  }
+}

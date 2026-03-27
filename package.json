@@ -1,37 +1,32 @@
 {
-  "name": "inmobarco-property-template",
-  "version": "2.0.0",
-  "description": "Plantilla optimizada para mostrar detalles de propiedades inmobiliarias con integración a Arrendasoft V2 API y encriptación de URLs",
-  "main": "index.html",
+  "name": "ficha-inmobarco",
+  "version": "3.0.0",
+  "description": "Ficha de propiedad Inmobarco - Nuxt 3 SSR con WASI API",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "build": "node build-env.js",
-    "start": "python -m http.server 3000",
-    "dev": "python -m http.server 3000",
-    "serve": "python -m http.server 8000",
-    "lint:js": "echo 'JavaScript linting placeholder'",
-    "validate": "echo 'Validating HTML, CSS, and JavaScript files...'",
-    "clean": "rm -f js/env-vars.js || del js\\env-vars.js 2>nul"
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
   },
-  "keywords": [
-    "inmobiliaria",
-    "propiedades",
-    "arrendasoft",
-    "api",
-    "real-estate",
-    "property-details",
-    "encryption",
-    "url-security"
-  ],
+  "dependencies": {
+    "nuxt": "^3.16.0",
+    "vue": "^3.5.0",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "^5.7.0"
+  },
   "author": "Inmobarco",
   "license": "MIT",
-  "devDependencies": {
-    "live-server": "^1.2.2"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/Drykolf/inmobarco-property-template"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18.0.0"
   }
 }
