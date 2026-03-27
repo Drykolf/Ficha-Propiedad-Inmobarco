@@ -142,13 +142,23 @@ const ogImage = computed(() => {
   return firstEntry.url_big || firstEntry.url || fallback
 })
 
+const pageUrl = computed(() =>
+  encryptedId.value
+    ? `${config.public.siteUrl}/?id=${encryptedId.value}`
+    : config.public.siteUrl,
+)
+
 useHead({
   title: pageTitle,
+  link: [
+    { rel: 'canonical', href: pageUrl },
+  ],
   meta: [
     { name: 'description', content: pageDescription },
     { name: 'keywords', content: 'inmuebles, propiedades, venta, arriendo, Inmobarco' },
     // Open Graph
     { property: 'og:type', content: 'article' },
+    { property: 'og:url', content: pageUrl },
     { property: 'og:site_name', content: 'Inmobarco' },
     { property: 'og:title', content: pageTitle },
     { property: 'og:description', content: pageDescription },
