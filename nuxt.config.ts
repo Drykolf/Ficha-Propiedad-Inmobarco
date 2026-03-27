@@ -1,7 +1,6 @@
 export default defineNuxtConfig({
   ssr: true,
   compatibilityDate: '2025-01-01',
-
   experimental: {
     appManifest: false,
   },
@@ -40,9 +39,5 @@ export default defineNuxtConfig({
 
   css: ['~/assets/css/property-detail.css'],
 
-  modules: [],
-
-  nitro: {
-    preset: 'netlify',
-  },
+  modules: ['@netlify/nuxt'],
 })
