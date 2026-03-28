@@ -10,7 +10,7 @@
 
       <!-- Error -->
       <div v-else-if="error" class="error" style="display: block;">
-        {{ errorMessage }}
+        {{ errorMessage}}
       </div>
 
       <!-- Property content -->
@@ -63,6 +63,8 @@
       </div>
     </div>
 
+    <PropertyContact v-if="error && errorPropertyId" :property="{ id_property: errorPropertyId } as any" />
+
     <PropertyDownload
       ref="downloadRef"
       :images="galleryImages"
@@ -101,6 +103,13 @@ const property = _property as Ref<WasiProperty | null>
 const propertyTypeLabel = computed(() =>
   getPropertyTypeLabel(property.value?.id_property_type || ''),
 )
+
+// Property ID from error response (e.g. when property is unavailable)
+// $fetch wraps Nitro errors: error.value.data is the H3 error response, .data within it is our custom data
+const errorPropertyId = computed(() => {
+  const errData = (error.value?.data as any)?.data as { propertyId?: string } | undefined
+  return errData?.propertyId || null
+})
 
 // Error message in Spanish
 const errorMessage = computed(() => {

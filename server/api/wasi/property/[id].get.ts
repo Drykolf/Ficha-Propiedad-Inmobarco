@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
       parseInt(String(property.id_availability)) !== 1
       || ![1, 3].includes(parseInt(String(property.id_status_on_page)))
     ) {
-      throw createError({ statusCode: 404, statusMessage: 'La propiedad no esta disponible' })
+      throw createError({ statusCode: 404, statusMessage: 'La propiedad no esta disponible', data: { propertyId } })
     }
 
     return property
